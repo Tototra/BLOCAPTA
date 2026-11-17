@@ -47,12 +47,12 @@ def generate_bloc_log(
             continue
         for _ in range(rng.poisson(cases_per_day)):
             case += 1
-            t = day + timedelta(hours=int(rng.choice(hours, p=weights)), minutes=float(rng.uniform(0, 60)))
+            t = day + timedelta(hours=int(rng.choice(hours, p=weights)), minutes=int(rng.integers(0, 60)))
             cid = f"C{case:06d}"
             brancardier = f"BR{rng.integers(1, 7):02d}"
             rows.append((cid, FIRST_ACTIVITY, t, None, "service_hospitalisation"))
             for act, mean, sd in BLOC_TRANSITIONS:
-                t = t + timedelta(minutes=_lognormal(rng, mean, sd))
+                t = t + timedelta(seconds=round(_lognormal(rng, mean, sd) * 60))
                 res = brancardier if act in {"prise_en_charge_brancardier", "depose_bloc"} else None
                 rows.append((cid, act, t, res, "brancardier" if res else None))
     df = pd.DataFrame(rows, columns=["case_id", "activity", "timestamp", "resource", "role"])

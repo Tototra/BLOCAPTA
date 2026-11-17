@@ -7,6 +7,7 @@ Les noms de colonnes réels de l'hôpital sont mappés via ``ColumnMapping``.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -37,6 +38,20 @@ def load_event_log(path: Path | str, mapping: ColumnMapping | None = None, sep: 
     return normalise(raw, mapping)
 
 
+_ISO = re.compile(r"^\d{4}-\d{2}-\d{2}")
+
+
+def _parse_timestamps(col: pd.Series, mapping: ColumnMapping) -> pd.Series:
+    if pd.api.types.is_datetime64_any_dtype(col):
+        return col
+    if mapping.timestamp_format:
+        return pd.to_datetime(col, format=mapping.timestamp_format)
+    sample = col.dropna().astype(str).head(50)
+    if len(sample) and sample.str.match(_ISO).all():
+        return pd.to_datetime(col, format="ISO8601")
+    return pd.to_datetime(col, dayfirst=mapping.dayfirst, format="mixed")
+
+
 def normalise(raw: pd.DataFrame, mapping: ColumnMapping) -> pd.DataFrame:
     rename = {}
     for target in ("case_id", "activity", "timestamp", "resource", "role", "pathway"):
@@ -48,7 +63,7 @@ def normalise(raw: pd.DataFrame, mapping: ColumnMapping) -> pd.DataFrame:
     if missing:
         raise ValueError(f"Colonnes obligatoires absentes : {missing}. Colonnes disponibles : {list(raw.columns)}")
     df = df.copy()
-    df["timestamp"] = pd.to_datetime(df["timestamp"], format=mapping.timestamp_format, dayfirst=mapping.dayfirst)
+    df["timestamp"] = _parse_timestamps(df["timestamp"], mapping)
     df["case_id"] = df["case_id"].astype(str)
     df["activity"] = df["activity"].astype(str).str.strip()
     df = df.dropna(subset=["timestamp"]).sort_values(["case_id", "timestamp"], kind="stable")
