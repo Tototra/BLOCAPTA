@@ -1,0 +1,52 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Décommentez pour utiliser un GPU NVIDIA (nvidia-container-toolkit requis)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # Télécharge les modèles au premier démarrage puis s'arrête
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        ollama pull ${BLOCAPTA_MODEL_EXTRACTION:-qwen3:8b} &&
+        ollama pull ${BLOCAPTA_MODEL_REPORT:-qwen3:8b} &&
+        ollama pull ${BLOCAPTA_MODEL_CONFIGURATOR:-qwen3:8b}
+
+  api:
+    build: .
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      BLOCAPTA_OLLAMA_URL: http://ollama:11434
+      BLOCAPTA_MODEL_EXTRACTION: ${BLOCAPTA_MODEL_EXTRACTION:-qwen3:8b}
+      BLOCAPTA_MODEL_REPORT: ${BLOCAPTA_MODEL_REPORT:-qwen3:8b}
+      BLOCAPTA_MODEL_CONFIGURATOR: ${BLOCAPTA_MODEL_CONFIGURATOR:-qwen3:8b}
+      BLOCAPTA_OLLAMA_THINK: "false"
+    ports:
+      - "8000:8000"
+
+volumes:
+  ollama:
