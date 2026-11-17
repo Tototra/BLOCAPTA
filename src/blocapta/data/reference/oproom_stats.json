@@ -1,0 +1,589 @@
+{
+ "source": "Export OPROOM agrégé (aucune donnée nominative)",
+ "period": {
+  "start": "2026-01-01",
+  "end": "2026-10-31",
+  "days": 304
+ },
+ "totals": {
+  "scheduled": 9182,
+  "completed": 7732,
+  "cancelled": 1450,
+  "cancellation_rate": 0.1579,
+  "duration_outliers_removed": 5,
+  "completed_in_rooms_used": 7414
+ },
+ "targets": {
+  "room_occupancy_rate": 0.47,
+  "overflow_rate": 0.03,
+  "first_incision_rate": 0.05,
+  "turnover_median_min": 7.0,
+  "first_case_start_median": "08:40"
+ },
+ "weekday_mean_cases": [
+  30.49,
+  28.6,
+  33.67,
+  41.5,
+  27.8,
+  4.3,
+  4.35
+ ],
+ "month_mean_cases_weekdays": {
+  "1": 32.68,
+  "2": 34.65,
+  "3": 35.18,
+  "4": 38.23,
+  "5": 29.48,
+  "6": 37.23,
+  "7": 29.43,
+  "8": 18.14,
+  "9": 35.14,
+  "10": 33.73
+ },
+ "urgent": {
+  "share_of_completed": 0.223,
+  "mean_per_day": 5.44,
+  "var_per_day": 4.73,
+  "hourly_profile": [
+   0.0163,
+   0.0091,
+   0.0073,
+   0.0115,
+   0.0048,
+   0.0042,
+   0.003,
+   0.0042,
+   0.0466,
+   0.0708,
+   0.0617,
+   0.0756,
+   0.0423,
+   0.0714,
+   0.0926,
+   0.0913,
+   0.0913,
+   0.0544,
+   0.0623,
+   0.0484,
+   0.0448,
+   0.0375,
+   0.0345,
+   0.0139
+  ]
+ },
+ "programmed_hourly_profile": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0002,
+  0.1949,
+  0.1298,
+  0.1453,
+  0.1253,
+  0.0733,
+  0.0715,
+  0.1076,
+  0.0873,
+  0.0503,
+  0.0127,
+  0.0014,
+  0.0002,
+  0.0002,
+  0.0,
+  0.0,
+  0.0
+ ],
+ "admission_mix": {
+  "Ambulatoire": 0.5718,
+  "Hospitalisation": 0.4278,
+  "Externe": 0.0004
+ },
+ "anesthesia_mix": {
+  "AG": 0.454,
+  "inconnu": 0.2503,
+  "AL_sedation": 0.1772,
+  "ALR": 0.0901,
+  "AL": 0.0283
+ },
+ "cancellation_reasons": {
+  "Annulé par le patient et/ou la famille": 767,
+  "Reporté par le chirurgien": 147,
+  "Erreur de saisie": 142,
+  "Recusé par le chirurgien": 69,
+  "Recusé par medecin anesthésiste": 69,
+  "Patient dcd": 12,
+  "Problème de matériel": 10,
+  "Pas de plage disponible au bloc opératoire": 8,
+  "Annulé par le médecin traitant": 6,
+  "Pvpp": 6,
+  "Plage annulée": 5,
+  "Reporté par le patient": 5,
+  "Souci de santé intercurrent": 2,
+  "Patient non venu à la cs anesthésie": 2,
+  "Deja programmé": 1,
+  "Fermeture de lits": 1,
+  "Pvpp à sa cs de programmation": 1,
+  "Opérée plus tôt": 1,
+  "Récusé au bloc": 1,
+  "Changement de date.": 1
+ },
+ "specialties": {
+  "Anesthésie": {
+   "n": 2,
+   "share": 0.0003,
+   "median_min": 40.0,
+   "mean_min": 40.0,
+   "sd_min": 0.0,
+   "p10_min": 40.0,
+   "p90_min": 40.0,
+   "mu_log": 3.6889,
+   "sigma_log": 0.0,
+   "urgent_share": 0.0,
+   "cancellation_rate": 0.1262,
+   "ambulatory_share": 0.0,
+   "anesthesia_mix": {
+    "AL": 1.0
+   },
+   "rooms": {
+    "OP 9": 1.0
+   }
+  },
+  "Cardiologie": {
+   "n": 17,
+   "share": 0.0023,
+   "median_min": 46.0,
+   "mean_min": 42.2,
+   "sd_min": 13.6,
+   "p10_min": 26.400000000000002,
+   "p90_min": 54.6,
+   "mu_log": 3.687,
+   "sigma_log": 0.3618,
+   "urgent_share": 0.2353,
+   "cancellation_rate": 0.2308,
+   "ambulatory_share": 0.6471,
+   "anesthesia_mix": {
+    "inconnu": 0.8235,
+    "AL": 0.1176,
+    "AG": 0.0588
+   },
+   "rooms": {
+    "OP 10": 1.0
+   }
+  },
+  "Chirurgie Générale et Digestive": {
+   "n": 1063,
+   "share": 0.1434,
+   "median_min": 109.0,
+   "mean_min": 131.0,
+   "sd_min": 80.3,
+   "p10_min": 60.0,
+   "p90_min": 220.60000000000014,
+   "mu_log": 4.7347,
+   "sigma_log": 0.5113,
+   "urgent_share": 0.5221,
+   "cancellation_rate": 0.1855,
+   "ambulatory_share": 0.3208,
+   "anesthesia_mix": {
+    "AG": 0.6416,
+    "inconnu": 0.2766,
+    "ALR": 0.0414,
+    "AL": 0.0273,
+    "AL_sedation": 0.0132
+   },
+   "rooms": {
+    "OP 3": 0.3895,
+    "OP 5": 0.2841,
+    "OP 4": 0.0687,
+    "OP 6": 0.0668,
+    "OP 8": 0.0649,
+    "OP 2": 0.063,
+    "OP 7": 0.063
+   }
+  },
+  "Chirurgie ORL": {
+   "n": 379,
+   "share": 0.0511,
+   "median_min": 85.0,
+   "mean_min": 104.4,
+   "sd_min": 67.8,
+   "p10_min": 43.0,
+   "p90_min": 195.59999999999997,
+   "mu_log": 4.4774,
+   "sigma_log": 0.5728,
+   "urgent_share": 0.1741,
+   "cancellation_rate": 0.2539,
+   "ambulatory_share": 0.5858,
+   "anesthesia_mix": {
+    "AG": 0.781,
+    "inconnu": 0.1979,
+    "AL_sedation": 0.0185,
+    "ALR": 0.0026
+   },
+   "rooms": {
+    "OP 7": 0.5858,
+    "OP 4": 0.1372,
+    "OP 8": 0.1346,
+    "OP 5": 0.0871,
+    "OP 2": 0.0237,
+    "OP 3": 0.0158,
+    "OP 6": 0.0158
+   }
+  },
+  "Chirurgie Orthopédique": {
+   "n": 1397,
+   "share": 0.1884,
+   "median_min": 113.0,
+   "mean_min": 112.7,
+   "sd_min": 57.0,
+   "p10_min": 41.0,
+   "p90_min": 184.4000000000001,
+   "mu_log": 4.5798,
+   "sigma_log": 0.5698,
+   "urgent_share": 0.3794,
+   "cancellation_rate": 0.1775,
+   "ambulatory_share": 0.4123,
+   "anesthesia_mix": {
+    "AG": 0.4681,
+    "inconnu": 0.2641,
+    "ALR": 0.2634,
+    "AL_sedation": 0.0021,
+    "AL": 0.0021
+   },
+   "rooms": {
+    "OP 6": 0.3808,
+    "OP 3": 0.2842,
+    "OP 5": 0.2369,
+    "OP 4": 0.0923,
+    "OP 2": 0.0043,
+    "OP 9": 0.0007,
+    "OP 7": 0.0007
+   }
+  },
+  "Chirurgie Urologique": {
+   "n": 862,
+   "share": 0.1163,
+   "median_min": 84.0,
+   "mean_min": 103.1,
+   "sd_min": 64.3,
+   "p10_min": 54.0,
+   "p90_min": 158.0,
+   "mu_log": 4.5113,
+   "sigma_log": 0.4639,
+   "urgent_share": 0.2726,
+   "cancellation_rate": 0.1646,
+   "ambulatory_share": 0.5232,
+   "anesthesia_mix": {
+    "AG": 0.5963,
+    "inconnu": 0.29,
+    "ALR": 0.08,
+    "AL_sedation": 0.0278,
+    "AL": 0.0058
+   },
+   "rooms": {
+    "OP 2": 0.7146,
+    "OP 5": 0.1195,
+    "OP 3": 0.0452,
+    "OP 7": 0.0418,
+    "OP 6": 0.0325,
+    "OP 8": 0.0313,
+    "OP 4": 0.0151
+   }
+  },
+  "Endoscopie Digestive": {
+   "n": 1169,
+   "share": 0.1577,
+   "median_min": 35.0,
+   "mean_min": 38.7,
+   "sd_min": 16.5,
+   "p10_min": 22.0,
+   "p90_min": 59.0,
+   "mu_log": 3.5805,
+   "sigma_log": 0.3834,
+   "urgent_share": 0.0145,
+   "cancellation_rate": 0.1411,
+   "ambulatory_share": 0.8015,
+   "anesthesia_mix": {
+    "AG": 0.7417,
+    "inconnu": 0.2583
+   },
+   "rooms": {
+    "OP 9": 0.9991,
+    "OP 5": 0.0009
+   }
+  },
+  "Gynécologie Obstétrique": {
+   "n": 884,
+   "share": 0.1192,
+   "median_min": 60.0,
+   "mean_min": 72.0,
+   "sd_min": 42.8,
+   "p10_min": 33.0,
+   "p90_min": 121.0,
+   "mu_log": 4.1343,
+   "sigma_log": 0.521,
+   "urgent_share": 0.2613,
+   "cancellation_rate": 0.1016,
+   "ambulatory_share": 0.1538,
+   "anesthesia_mix": {
+    "AL_sedation": 0.2919,
+    "inconnu": 0.276,
+    "AG": 0.2149,
+    "ALR": 0.2093,
+    "AL": 0.0079
+   },
+   "rooms": {
+    "OP 10": 0.4412,
+    "OP 11": 0.1561,
+    "OP 4": 0.1505,
+    "OP 5": 0.1482,
+    "OP 7": 0.0498,
+    "OP 3": 0.026,
+    "OP 6": 0.017,
+    "OP 2": 0.009,
+    "OP 8": 0.0023
+   }
+  },
+  "Ophtalmologie": {
+   "n": 1427,
+   "share": 0.1925,
+   "median_min": 17.0,
+   "mean_min": 20.3,
+   "sd_min": 10.5,
+   "p10_min": 14.0,
+   "p90_min": 28.0,
+   "mu_log": 2.9373,
+   "sigma_log": 0.3493,
+   "urgent_share": 0.0,
+   "cancellation_rate": 0.1235,
+   "ambulatory_share": 0.9993,
+   "anesthesia_mix": {
+    "AL_sedation": 0.7064,
+    "inconnu": 0.1724,
+    "AL": 0.1135,
+    "AG": 0.0077
+   },
+   "rooms": {
+    "OP 4": 0.9951,
+    "OP 5": 0.0049
+   }
+  },
+  "PMO": {
+   "n": 1,
+   "share": 0.0001,
+   "median_min": 537.0,
+   "mean_min": 537.0,
+   "sd_min": 0.0,
+   "p10_min": 537.0,
+   "p90_min": 537.0,
+   "mu_log": 6.286,
+   "sigma_log": 0.0,
+   "urgent_share": 0.0,
+   "cancellation_rate": 0.0,
+   "ambulatory_share": 0.0,
+   "anesthesia_mix": {
+    "AG": 1.0
+   },
+   "rooms": {
+    "OP 3": 1.0
+   }
+  },
+  "Stomatologie": {
+   "n": 116,
+   "share": 0.0156,
+   "median_min": 91.0,
+   "mean_min": 93.4,
+   "sd_min": 34.7,
+   "p10_min": 57.5,
+   "p90_min": 142.0,
+   "mu_log": 4.4749,
+   "sigma_log": 0.3507,
+   "urgent_share": 0.0431,
+   "cancellation_rate": 0.1773,
+   "ambulatory_share": 0.9483,
+   "anesthesia_mix": {
+    "AG": 0.75,
+    "inconnu": 0.25
+   },
+   "rooms": {
+    "OP 7": 0.6466,
+    "OP 8": 0.1207,
+    "OP 4": 0.0862,
+    "OP 2": 0.069,
+    "OP 5": 0.0431,
+    "OP 3": 0.0345
+   }
+  },
+  "UROLOGIE ROBOT": {
+   "n": 36,
+   "share": 0.0049,
+   "median_min": 331.5,
+   "mean_min": 364.2,
+   "sd_min": 122.8,
+   "p10_min": 203.5,
+   "p90_min": 539.5,
+   "mu_log": 5.8317,
+   "sigma_log": 0.3902,
+   "urgent_share": 0.0,
+   "cancellation_rate": 0.1778,
+   "ambulatory_share": 0.0556,
+   "anesthesia_mix": {
+    "AG": 0.7222,
+    "inconnu": 0.2778
+   },
+   "rooms": {
+    "OP 8": 0.7778,
+    "OP 7": 0.1944,
+    "OP 2": 0.0278
+   }
+  },
+  "VISCERAL ROBOT": {
+   "n": 61,
+   "share": 0.0082,
+   "median_min": 188.0,
+   "mean_min": 217.8,
+   "sd_min": 84.1,
+   "p10_min": 134.0,
+   "p90_min": 340.0,
+   "mu_log": 5.3121,
+   "sigma_log": 0.3833,
+   "urgent_share": 0.1639,
+   "cancellation_rate": 0.2989,
+   "ambulatory_share": 0.4426,
+   "anesthesia_mix": {
+    "AG": 0.6066,
+    "inconnu": 0.377,
+    "ALR": 0.0164
+   },
+   "rooms": {
+    "OP 8": 0.5902,
+    "OP 3": 0.3115,
+    "OP 5": 0.0656,
+    "OP 6": 0.0328
+   }
+  }
+ },
+ "rooms": {
+  "OP 10": {
+   "open_rate_weekday": 0.682,
+   "cases": 407,
+   "specialties": {
+    "Gynécologie Obstétrique": 0.9582,
+    "Cardiologie": 0.0418
+   }
+  },
+  "OP 11": {
+   "open_rate_weekday": 0.3641,
+   "cases": 138,
+   "specialties": {
+    "Gynécologie Obstétrique": 1.0
+   }
+  },
+  "OP 2": {
+   "open_rate_weekday": 0.765,
+   "cases": 715,
+   "specialties": {
+    "Chirurgie Urologique": 0.8615,
+    "Chirurgie Générale et Digestive": 0.0937,
+    "Chirurgie ORL": 0.0126,
+    "Stomatologie": 0.0112,
+    "Gynécologie Obstétrique": 0.0112,
+    "Chirurgie Orthopédique": 0.0084,
+    "UROLOGIE ROBOT": 0.0014
+   }
+  },
+  "OP 3": {
+   "open_rate_weekday": 0.894,
+   "cases": 903,
+   "specialties": {
+    "Chirurgie Générale et Digestive": 0.4585,
+    "Chirurgie Orthopédique": 0.4396,
+    "Chirurgie Urologique": 0.0432,
+    "Gynécologie Obstétrique": 0.0255,
+    "VISCERAL ROBOT": 0.021,
+    "Chirurgie ORL": 0.0066,
+    "Stomatologie": 0.0044,
+    "PMO": 0.0011
+   }
+  },
+  "OP 4": {
+   "open_rate_weekday": 0.7926,
+   "cases": 1830,
+   "specialties": {
+    "Ophtalmologie": 0.776,
+    "Gynécologie Obstétrique": 0.0727,
+    "Chirurgie Orthopédique": 0.0705,
+    "Chirurgie Générale et Digestive": 0.0399,
+    "Chirurgie ORL": 0.0284,
+    "Chirurgie Urologique": 0.0071,
+    "Stomatologie": 0.0055
+   }
+  },
+  "OP 5": {
+   "open_rate_weekday": 0.9309,
+   "cases": 917,
+   "specialties": {
+    "Chirurgie Orthopédique": 0.361,
+    "Chirurgie Générale et Digestive": 0.3293,
+    "Gynécologie Obstétrique": 0.1429,
+    "Chirurgie Urologique": 0.1123,
+    "Chirurgie ORL": 0.036,
+    "Ophtalmologie": 0.0076,
+    "Stomatologie": 0.0055,
+    "VISCERAL ROBOT": 0.0044,
+    "Endoscopie Digestive": 0.0011
+   }
+  },
+  "OP 6": {
+   "open_rate_weekday": 0.47,
+   "cases": 654,
+   "specialties": {
+    "Chirurgie Orthopédique": 0.8135,
+    "Chirurgie Générale et Digestive": 0.1086,
+    "Chirurgie Urologique": 0.0428,
+    "Gynécologie Obstétrique": 0.0229,
+    "Chirurgie ORL": 0.0092,
+    "VISCERAL ROBOT": 0.0031
+   }
+  },
+  "OP 7": {
+   "open_rate_weekday": 0.53,
+   "cases": 452,
+   "specialties": {
+    "Chirurgie ORL": 0.4912,
+    "Stomatologie": 0.1659,
+    "Chirurgie Générale et Digestive": 0.1482,
+    "Gynécologie Obstétrique": 0.0973,
+    "Chirurgie Urologique": 0.0796,
+    "UROLOGIE ROBOT": 0.0155,
+    "Chirurgie Orthopédique": 0.0022
+   }
+  },
+  "OP 8": {
+   "open_rate_weekday": 0.3825,
+   "cases": 227,
+   "specialties": {
+    "Chirurgie Générale et Digestive": 0.304,
+    "Chirurgie ORL": 0.2247,
+    "VISCERAL ROBOT": 0.1586,
+    "UROLOGIE ROBOT": 0.1233,
+    "Chirurgie Urologique": 0.1189,
+    "Stomatologie": 0.0617,
+    "Gynécologie Obstétrique": 0.0088
+   }
+  },
+  "OP 9": {
+   "open_rate_weekday": 0.5622,
+   "cases": 1171,
+   "specialties": {
+    "Endoscopie Digestive": 0.9974,
+    "Anesthésie": 0.0017,
+    "Chirurgie Orthopédique": 0.0009
+   }
+  }
+ }
+}
