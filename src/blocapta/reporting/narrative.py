@@ -48,6 +48,8 @@ _TYPE_LABELS = {
     "ressource": "Accès aux postes informatiques",
     "disponibilite": "Logiciel indisponible au moment de la tâche",
     "charge": "Dépassement du nombre d'utilisateurs simultanés",
+    "panne": "Pannes du logiciel : mode dégradé et resaisie",
+    "adoption": "Contournement de l'outil par manque de confiance",
 }
 _RECO = {
     "cardinalite": "Exiger de l'éditeur la saisie de plusieurs éléments par fiche, ou chiffrer le temps perdu avant signature.",
@@ -56,6 +58,8 @@ _RECO = {
     "ressource": "Prévoir des postes supplémentaires ou un accès mobile.",
     "disponibilite": "Négocier une disponibilité couvrant toute la plage d'activité, astreintes comprises.",
     "charge": "Dimensionner la licence au pic d'utilisateurs simultanés mesuré.",
+    "panne": "Exiger un mode dégradé documenté, un support réactif et une présence sur site au démarrage.",
+    "adoption": "Prévoir des référents (champions), une formation en salle et un suivi des premières semaines.",
 }
 
 
@@ -63,10 +67,19 @@ def deterministic_narrative(facts: AuditFacts) -> ReportNarrative:
     sw = facts.software.get("name") or "Le logiciel"
     sim = facts.simulation
     s = facts.score
-    parts = [f"{sw} obtient un score de compatibilité de {s.score}/100 ({s.level}) pour {facts.hospital['name']}."]
-    if not facts.validation["admissible"]:
-        bloq = [f["label"] for f in facts.validation["failed"] if f["severity"] == "bloquant"]
-        parts.append("La fiche technique ne respecte pas les critères bloquants : " + "; ".join(bloq) + ".")
+    v = facts.validation
+    parts = [
+        f"{sw} obtient un score de compatibilité de {s.score}/100 ({s.level}) pour {facts.hospital['name']}, "
+        f"avec un niveau de confiance {s.confidence}."
+    ]
+    if not v["admissible"]:
+        parts.append(
+            "La fiche logiciel est incomplète : aucun résultat chiffré n'est produit tant que les champs "
+            "obligatoires ne sont pas renseignés."
+        )
+    if v["go_nogo"] == "NO_GO":
+        bloq = [f["label"] for f in v["failed"] if f["severity"] == "bloquant"]
+        parts.append("Exigence(s) réglementaire(s) obligatoire(s) non démontrée(s) : " + "; ".join(bloq) + ".")
     points: list[VigilancePoint] = []
     if sim:
         parts.append(f"La simulation couvre {sim.days} jours d'activité et {sim.replications} réplications.")
@@ -99,13 +112,22 @@ def deterministic_narrative(facts: AuditFacts) -> ReportNarrative:
                     recommandation=_RECO[f.type],
                 )
             )
+    if facts.human:
+        hu = facts.human
+        users = {r: v for r, v in hu["final_trust_by_role"].items() if r in hu["usage_rate_by_role"]}
+        low = sorted((users or hu["final_trust_by_role"]).items(), key=lambda kv: kv[1])[:1]
+        if low:
+            parts.append(
+                f"Facteur humain (scénario « {hu['scenario']} ») : en fin de période, la confiance des utilisateurs "
+                f"« {low[0][0]} » est de {low[0][1]:.2f} sur 1."
+            )
     if points:
         parts.append(f"{len(points)} point(s) de vigilance ont été identifiés.")
     conditions = [p.recommandation for p in points if p.gravite in {"critique", "majeure"}]
     return ReportNarrative(
         resume_executif=" ".join(parts),
         points_de_vigilance=points,
-        questions_editeur=facts.validation["questions"][:15],
+        questions_editeur=v["questions"][:10],
         conditions_deploiement=list(dict.fromkeys(conditions)),
     )
 

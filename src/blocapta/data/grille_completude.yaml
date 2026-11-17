@@ -1,0 +1,102 @@
+# Grille de contrôle de complétude — Agent 1 (v0.1, Drive BLOCAPTA)
+# statut : O obligatoire (25), R recommandé (12), F facultatif (3)
+# critique : un statut « Partiel » bloque comme un champ vide
+# check : règle spéciale (sinon : champ texte / liste non vide)
+version_agent: "0.1"
+version_template: "0.1"
+fields:
+  # --- Bloc 0 Identité
+  - { id: B0.nom, bloc: 0, champ: Nom et version, statut: O, path: identite.nom_version,
+      question: "Quel est le nom exact du logiciel et sa version ?", exemple: "ScanTrace v2.1, module bloc" }
+  - { id: B0.editeur, bloc: 0, champ: Éditeur ou fabricant, statut: O, path: identite.editeur,
+      question: "Quelle société édite le logiciel ?", exemple: "Société X SAS" }
+  - { id: B0.type_outil, bloc: 0, champ: Type d'outil, statut: O, path: identite.type_outil,
+      question: "Dans quelle catégorie entre l'outil ?", exemple: "Traçabilité des dispositifs médicaux" }
+  - { id: B0.statut_projet, bloc: 0, champ: Statut du projet, statut: O, path: identite.statut_projet,
+      question: "Où en est le projet ?", exemple: "En essai dans un autre établissement" }
+  - { id: B0.auteur_date, bloc: 0, champ: Auteur et date, statut: O, path: identite.auteur_date,
+      question: "Quelle est la fonction de l'auteur de la fiche, et la date ?", exemple: "Cadre de bloc, 13/11/2026" }
+  - { id: B0.sources, bloc: 0, champ: Sources utilisées, statut: O, path: identite.sources,
+      question: "Sur quelles sources s'appuie la fiche ?", exemple: "Démonstration éditeur, visite d'un site utilisateur" }
+  - { id: B0.classe_reglementaire, bloc: 0, champ: Classe réglementaire, statut: R, path: identite.classe_reglementaire,
+      question: "Le logiciel est-il un dispositif médical, et de quelle classe ?", exemple: "Logiciel non dispositif médical" }
+  # --- Bloc 1 Contexte
+  - { id: B1.probleme, bloc: 1, champ: Problème à résoudre, statut: O, path: contexte.probleme,
+      question: "Quelle difficulté concrète le logiciel doit-il régler au bloc ?", exemple: "Des implants sont tracés sur papier puis recopiés : oublis constatés" }
+  - { id: B1.situation_actuelle, bloc: 1, champ: Situation actuelle, statut: O, path: contexte.situation_actuelle,
+      question: "Comment fait-on aujourd'hui, sans le logiciel ?", exemple: "Registre papier, recopie par l'IBODE en fin de journée" }
+  - { id: B1.resultat_attendu, bloc: 1, champ: Résultat attendu, statut: O, path: contexte.resultat_attendu,
+      question: "Quel changement mesurable attend-on ?", exemple: "Zéro implant non tracé à 3 mois" }
+  - { id: B1.pourquoi_maintenant, bloc: 1, champ: Pourquoi maintenant, statut: F, path: contexte.pourquoi_maintenant,
+      question: "Pourquoi ce projet maintenant ?", exemple: "Exigence de certification" }
+  # --- Bloc 2 Acteurs
+  - { id: B2.acteurs, bloc: 2, champ: Tableau des acteurs, statut: O, critique: true, check: acteurs, path: acteurs,
+      question: "Pour chaque rôle qui utilise le logiciel : quelles actions, à quel moment du parcours, à quelle fréquence ?",
+      exemple: "IBODE : scanne chaque implant ouvert, en salle, à chaque cas" }
+  # --- Bloc 3 Périmètre
+  - { id: B3.fonctions_incluses, bloc: 3, champ: Ce que le logiciel fait, statut: O, path: perimetre.fonctions_incluses,
+      question: "Quelles fonctions seront réellement utilisées au bloc ?", exemple: "Scan UDI, alerte de rappel de lot" }
+  - { id: B3.fonctions_exclues, bloc: 3, champ: Ce que le logiciel ne fait pas, statut: O, path: perimetre.fonctions_exclues,
+      question: "Quelles fonctions sont absentes ou non activées ?", exemple: "Ne gère ni le stock ni la facturation" }
+  - { id: B3.salles_specialites, bloc: 3, champ: Salles, spécialités, sites, statut: O, path: perimetre.salles_specialites,
+      question: "Quelles salles et spécialités sont concernées ?", exemple: "Orthopédie et viscéral, salles OP 3 à OP 8" }
+  - { id: B3.etapes_parcours, bloc: 3, champ: Étapes du parcours concernées, statut: O, path: perimetre.etapes_parcours,
+      question: "À quelles étapes du parcours le logiciel intervient-il ?", exemple: "En salle" }
+  - { id: B3.volume, bloc: 3, champ: Volume prévu, statut: R, path: perimetre.volume,
+      question: "Combien d'utilisateurs et d'interventions par jour ?", exemple: "12 IBODE, environ 25 interventions par jour" }
+  # --- Bloc 4 Processus
+  - { id: B4.etapes, bloc: 4, champ: Étapes avant et après, statut: O, critique: true, check: processus, path: processus,
+      question: "Pour chaque étape qui change : qui, quelle action, durée sans et avec le logiciel (minutes), et d'où vient la durée ?",
+      exemple: "Tracer un implant : IBODE, 2 min sur papier (estimation du cadre), 0,5 min avec scan (essai éditeur sur 20 cas)" }
+  # --- Bloc 5 Données
+  - { id: B5.donnees_saisies, bloc: 5, champ: Données saisies, statut: O, path: donnees.donnees_saisies,
+      question: "Que saisissent les soignants, et comment ?", exemple: "Code UDI par scan, sélection du patient" }
+  - { id: B5.donnees_produites, bloc: 5, champ: Données produites, statut: O, path: donnees.donnees_produites,
+      question: "Que produit le logiciel ?", exemple: "Registre de traçabilité, alertes de rappel" }
+  - { id: B5.liens_logiciels, bloc: 5, champ: Liens avec d'autres logiciels, statut: O, check: liens, path: donnees.liens_logiciels,
+      question: "Avec quels logiciels échange-t-il des données (ou écrire « aucun lien ») ?", exemple: "DPI en HL7 v2 (sortant), logiciel de stock en fichier" }
+  - { id: B5.mode_echange, bloc: 5, champ: Mode d'échange, statut: R, path: donnees.mode_echange,
+      question: "Les échanges sont-ils en temps réel ou différés, automatiques ou manuels ?", exemple: "Temps réel, automatique" }
+  - { id: B5.materiel, bloc: 5, champ: Matériel nécessaire, statut: R, path: donnees.materiel,
+      question: "Quel matériel faut-il, et combien par salle ?", exemple: "1 douchette de scan et 1 poste par salle" }
+  # --- Bloc 6 Fiabilité
+  - { id: B6.disponibilite, bloc: 6, champ: Disponibilité annoncée, statut: O, check: disponibilite, path: fiabilite.disponibilite_pct,
+      question: "Quelle disponibilité est annoncée, et sur quelle source ?", exemple: "99,5 %, contrat de service de l'éditeur" }
+  - { id: B6.mode_degrade, bloc: 6, champ: Mode dégradé, statut: O, critique: true, path: fiabilite.mode_degrade,
+      question: "Que font les soignants si le logiciel est indisponible pendant une intervention ?",
+      exemple: "Retour au registre papier, resaisie par l'IBODE dans l'heure qui suit la panne" }
+  - { id: B6.support, bloc: 6, champ: Support de l'éditeur, statut: O, path: fiabilite.support,
+      question: "Quel support : délai, horaires, présence sur site au démarrage ?", exemple: "Téléphone sous 4 h, présence sur site la première semaine" }
+  - { id: B6.pannes_connues, bloc: 6, champ: Pannes ou défauts connus, statut: R, path: fiabilite.pannes_connues,
+      question: "Quels incidents ont déjà été observés ?", exemple: "Aucun connu sur 2 sites (retour des utilisateurs)" }
+  - { id: B6.mises_a_jour, bloc: 6, champ: Mises à jour, statut: F, path: fiabilite.mises_a_jour,
+      question: "À quelle fréquence, et avec quelle interruption ?", exemple: "Mensuelle, la nuit, 30 min" }
+  # --- Bloc 7 Déploiement
+  - { id: B7.formation_initiale, bloc: 7, champ: Formation initiale, statut: O, path: deploiement.formation_initiale,
+      question: "Quelle formation initiale : durée, format, qui est formé ?", exemple: "1 h en salle pour chaque IBODE avant le démarrage" }
+  - { id: B7.calendrier, bloc: 7, champ: Calendrier de déploiement, statut: R, path: deploiement.calendrier,
+      question: "Déploiement d'un coup ou par étapes, sur quelle durée ?", exemple: "2 salles pilotes pendant 1 mois, puis tout le bloc" }
+  - { id: B7.accompagnement, bloc: 7, champ: Accompagnement, statut: R, path: deploiement.accompagnement,
+      question: "Y a-t-il des référents dans l'équipe ou une aide sur place ?", exemple: "2 IBODE référentes formées en avance" }
+  - { id: B7.double_saisie, bloc: 7, champ: Période de double saisie, statut: F, path: deploiement.double_saisie,
+      question: "Combien de temps garde-t-on l'ancien et le nouveau système ?", exemple: "2 semaines" }
+  # --- Bloc 8 Risques
+  - { id: B8.reglementaire, bloc: 8, champ: Contraintes réglementaires, statut: O, check: reglementaire, path: risques.contraintes_reglementaires,
+      question: "Quelle est la situation pour : dispositif médical, RGPD, hébergement des données de santé, traçabilité des accès ?",
+      exemple: "Non DM ; RGPD conforme, AIPD fournie ; hébergé sur site ; journalisation des accès" }
+  - { id: B8.risques_patient, bloc: 8, champ: Risques pour le patient, statut: O, critique: true, path: risques.risques_patient,
+      question: "Qu'est-ce qui pourrait mal tourner pour la sécurité du patient ?", exemple: "Implant non tracé en cas de panne non suivie de resaisie" }
+  - { id: B8.risques_organisation, bloc: 8, champ: Risques pour l'organisation, statut: R, path: risques.risques_organisation,
+      question: "Quels risques pour l'organisation (retards, surcharge, dépendances) ?", exemple: "Ralentissement les premières semaines" }
+  # --- Bloc 9 Preuves
+  - { id: B9.niveau_preuve, bloc: 9, champ: Niveau de preuve, statut: O, path: preuves.niveau_preuve,
+      question: "D'où viennent les durées et les gains annoncés ?", exemple: "Essai de l'éditeur seulement (déclaration de l'éditeur)" }
+  - { id: B9.sites_utilisateurs, bloc: 9, champ: Sites déjà utilisateurs, statut: R, path: preuves.sites_utilisateurs,
+      question: "Quels établissements l'utilisent déjà ?", exemple: "CH de 400 lits, depuis 2 ans" }
+  - { id: B9.etudes, bloc: 9, champ: Études ou chiffres publiés, statut: R, path: preuves.etudes,
+      question: "Existe-t-il des études publiées (référence complète) ?", exemple: "Auteur et al., 2025, revue Y" }
+  - { id: B9.retours_soignants, bloc: 9, champ: Retour des soignants, statut: R, path: preuves.retours_soignants,
+      question: "Que disent les soignants qui l'utilisent, en positif et en négatif ?", exemple: "Gain de temps apprécié, scan difficile sur certains emballages" }
+  # --- Bloc 10 Indicateurs
+  - { id: B10.indicateurs, bloc: 10, champ: Indicateurs à suivre, statut: R, check: indicateurs, path: indicateurs,
+      question: "Quel indicateur suivre, avec valeur actuelle et cible ?", exemple: "Implants non tracés : 3 % actuellement, cible 0 %" }

@@ -76,6 +76,8 @@ class HumanSummary(BaseModel):
     roles: list[str] = Field(default_factory=list)
     trust_by_day: dict[str, list[float]] = Field(default_factory=dict, description="métier -> confiance moyenne par jour")
     special_agents: dict[str, list[float]] = Field(default_factory=dict, description="sceptiques / champions : confiance par jour")
+    trust_by_family: dict[str, list[float]] = Field(default_factory=dict, description="métier générique -> confiance par jour")
+    usage_by_family: dict[str, float] = Field(default_factory=dict, description="métier générique -> % d'usage réel")
     usage_rate_by_role: dict[str, float] = Field(default_factory=dict, description="% d'usages réels de l'outil")
     final_trust_by_role: dict[str, float] = Field(default_factory=dict)
     sw_minutes_by_week: list[float] = Field(default_factory=list, description="temps moyen d'une saisie outil par semaine")

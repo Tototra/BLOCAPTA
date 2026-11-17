@@ -1,0 +1,113 @@
+# Fiche logiciel (template Blocapta v0.1) — exemple FICTIF repris du template du Drive.
+version_template: "0.1"
+
+identite:
+  nom_version: ScanTrace v2
+  editeur: Société fictive
+  type_outil: Traçabilité des dispositifs médicaux par scan du code UDI
+  statut_projet: En essai
+  classe_reglementaire: Logiciel non dispositif médical
+  auteur_date: Cadre de bloc, 13/11/2026
+  sources: [Démonstration, Essai de l'éditeur sur 20 cas]
+
+contexte:
+  probleme: >
+    La traçabilité des implants est faite sur papier, puis recopiée dans le dossier.
+    Des oublis et des erreurs de recopie sont constatés.
+  situation_actuelle: Registre papier rempli par l'IBODE, recopié ensuite dans le dossier patient.
+  resultat_attendu: Aucun implant non tracé, suppression de la recopie.
+
+acteurs:
+  - role: IBODE
+    utilise_logiciel: true
+    actions: Scanne chaque dispositif ouvert
+    moment_parcours: En salle
+    frequence: À chaque cas avec implant
+    formation: 1 heure
+  - role: Pharmacien
+    utilise_logiciel: true
+    actions: Consulte les alertes de rappel de lot
+    moment_parcours: Hors bloc
+    frequence: Une fois par jour
+  - role: Chirurgien
+    utilise_logiciel: false
+    actions: Ne touche pas le logiciel
+
+perimetre:
+  fonctions_incluses: [Scan du code UDI, Registre de traçabilité, Alertes de rappel de lot]
+  fonctions_exclues: [Gestion du stock, Facturation]
+  salles_specialites: Orthopédie et chirurgie viscérale, salles OP 3 à OP 8
+  etapes_parcours: [en_salle, hors_bloc]
+  volume: 12 IBODE, environ 15 interventions avec implant par jour
+
+processus:
+  - numero: 1
+    etape: Tracer un implant
+    qui: IBODE
+    action: Scanner le code UDI du dispositif
+    moment: en_salle
+    duree_sans_min: 2
+    duree_avec_min: 0.5
+    unite_duree: par_element
+    duree_ouverture_saisie_min: 0.3
+    source_duree: "Sans : estimation du cadre ; avec : essai de l'éditeur sur 20 cas"
+    niveau_preuve: declaration_editeur
+    tache_bloc: tracabilite_dm
+  - numero: 2
+    etape: Consulter les alertes de rappel
+    qui: Pharmacien
+    action: Lire la liste des alertes du jour
+    moment: hors_bloc
+    duree_sans_min: 10
+    duree_avec_min: 3
+    source_duree: Estimation du pharmacien
+    niveau_preuve: estimation_bloc
+
+donnees:
+  donnees_saisies: Code UDI par scan, sélection du patient dans la liste du jour
+  donnees_produites: Registre de traçabilité, alertes de rappel, étiquettes
+  liens_logiciels:
+    - { cible: DPI, standard: HL7v2, sens: sortant }
+  mode_echange: Temps réel, automatique
+  materiel: 1 douchette de scan par salle, poste existant
+  type_poste: les_deux
+  donnees_patient_nominatives: true
+
+fiabilite:
+  disponibilite_pct: 99.5
+  disponibilite_source: Engagement contractuel de l'éditeur
+  mode_degrade: Retour au registre papier, resaisie par l'IBODE dans l'heure qui suit la panne
+  pannes_connues: Aucune connue sur les 2 sites utilisateurs (retour oral)
+  support: Téléphone sous 4 h, présence sur site la première semaine
+  support_sur_site_jours: 5
+
+deploiement:
+  calendrier: 2 salles pilotes pendant 1 mois, puis 6 salles
+  formation_initiale: 1 heure par IBODE, avant le démarrage
+  accompagnement: 2 IBODE référentes formées en avance
+
+risques:
+  contraintes_reglementaires:
+    dispositif_medical: false
+    conformite_rgpd: true
+    aipd_realisee: true
+    hebergement: on_premise
+    ins_integre: true
+    tracabilite_acces: true
+    chiffrement_tls: true
+    gestion_droits_rbac: true
+    matrice_flux: true
+    pca_pra: true
+    sso: true
+    pentest_recent: true
+  risques_patient: Implant non tracé si la panne n'est pas suivie de la resaisie prévue.
+  risques_organisation: Allongement du temps en salle les premières semaines.
+
+preuves:
+  sites_utilisateurs: 2 centres hospitaliers, depuis 1 an
+  etudes: Inconnu
+  retours_soignants: Scan apprécié ; lecture difficile sur certains emballages
+  niveau_preuve: declaration_editeur
+
+indicateurs:
+  - { indicateur: Implants non tracés, valeur_actuelle: "3 %", cible: "0 %" }

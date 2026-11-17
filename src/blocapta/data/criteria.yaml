@@ -1,158 +1,109 @@
-# Critères minimum qu'une fiche technique éditeur doit respecter.
+# Grille d'audit réglementaire et d'interopérabilité (document « INTEROPERABILITE », Drive BLOCAPTA).
+# Cadre : ANS (CI-SIS, PGSSI-S), HAS, RGPD, NIS 2.
 #
 # severity :
-#   bloquant -> la fiche est REJETÉE si le critère échoue (pas de simulation)
-#   majeur   -> admis, mais signalé comme point de vigilance fort
-#   mineur   -> information à compléter
+#   bloquant -> « Obligatoire (Go/NoGo) » : sans cela, la DSI et le DPO refuseront l'installation
+#   majeur   -> « Selon le périmètre » : fortement recommandé, contournable au démarrage
+#   mineur   -> utile, secondaire pour un outil organisationnel
+# Les critères « Pas nécessaire » (CE hors DM, HDS sur site, DICOM sans imagerie) sont
+# portés par des conditions `when` : ils ne s'appliquent que si le cas d'usage le justifie.
 #
-# op disponibles : present, is_true, contains_any, in, gte, lte
-# path : notation pointée ; "[]" aplatit une liste d'objets (ex. interoperabilite.connecteurs[].cible)
-# when : condition optionnelle d'application du critère
+# op : present, is_true, contains_any, in, gte, lte ; "[]" aplatit une liste d'objets.
 
-version: 1
+version: 2
 criteria:
-  # --- Identification -------------------------------------------------------
-  - id: ID-01
-    category: identification
-    label: Nom du produit et éditeur renseignés
+  # --- 1. Obligatoire (Go/NoGo) ------------------------------------------------
+  - id: GO-01
+    category: protection des données
+    label: Conformité RGPD et analyse d'impact (AIPD) réalisée avant déploiement
     severity: bloquant
     all:
-      - { path: produit.nom, op: present }
-      - { path: produit.editeur, op: present }
+      - { path: risques.contraintes_reglementaires.conformite_rgpd, op: is_true }
+      - { path: risques.contraintes_reglementaires.aipd_realisee, op: is_true }
 
-  - id: ID-02
-    category: identification
-    label: Version du produit renseignée
-    severity: mineur
-    all:
-      - { path: produit.version, op: present }
-
-  # --- Réglementaire --------------------------------------------------------
-  - id: REG-01
-    category: reglementaire
-    label: Hébergement des données de santé certifié HDS (ou installation sur site)
+  - id: GO-02
+    category: protection des données
+    label: Hébergeur certifié HDS (logiciel hébergé hors de l'établissement)
     severity: bloquant
+    when: { path: risques.contraintes_reglementaires.hebergement, op: in, value: [cloud_hds, saas, mixte] }
+    all:
+      - { path: risques.contraintes_reglementaires.hds_certifie, op: is_true }
+
+  - id: GO-03
+    category: cybersécurité
+    label: Traçabilité infalsifiable des accès (qui, quand, quoi, sur quel dossier)
+    severity: bloquant
+    all:
+      - { path: risques.contraintes_reglementaires.tracabilite_acces, op: is_true }
+
+  - id: GO-04
+    category: identitovigilance
+    label: Identité Nationale de Santé (téléservice INSi) si dossiers patients nominatifs
+    severity: bloquant
+    when: { path: donnees.donnees_patient_nominatives, op: is_true }
+    all:
+      - { path: risques.contraintes_reglementaires.ins_integre, op: is_true }
+
+  - id: GO-05
+    category: cybersécurité
+    label: Chiffrement des flux (TLS), droits par profil métier (RBAC) et matrice des flux
+    severity: bloquant
+    all:
+      - { path: risques.contraintes_reglementaires.chiffrement_tls, op: is_true }
+      - { path: risques.contraintes_reglementaires.gestion_droits_rbac, op: is_true }
+      - { path: risques.contraintes_reglementaires.matrice_flux, op: is_true }
+
+  - id: GO-06
+    category: continuité
+    label: Plan de continuité et de reprise (PCA/PRA, RPO et RTO définis)
+    severity: bloquant
+    all:
+      - { path: risques.contraintes_reglementaires.pca_pra, op: is_true }
+
+  - id: GO-07
+    category: dispositif médical
+    label: Marquage CE médical (RDM 2017/745) si fonction d'aide au diagnostic ou à la décision
+    severity: bloquant
+    when: { path: risques.contraintes_reglementaires.dispositif_medical, op: is_true }
+    all:
+      - { path: risques.contraintes_reglementaires.marquage_ce, op: is_true }
+
+  # --- 2. Selon le périmètre ---------------------------------------------------
+  - id: PER-01
+    category: interopérabilité
+    label: Standard d'échange de santé (HL7 v2, FHIR, CDA) pour les liens avec le SI
+    severity: majeur
+    when: { path: donnees.liens_logiciels, op: present }
+    all:
+      - { path: "donnees.liens_logiciels[].standard", op: contains_any, value: [HL7v2, HL7 v2, FHIR, CDA, HPRIM, DICOM] }
+
+  - id: PER-02
+    category: authentification
+    label: Authentification unique (annuaire / SSO) ou Pro Santé Connect
+    severity: majeur
     any:
-      - { path: reglementaire.hebergement_hds, op: is_true }
-      - { path: technique.hebergement, op: in, value: [on_premise] }
+      - { path: risques.contraintes_reglementaires.sso, op: is_true }
+      - { path: risques.contraintes_reglementaires.pro_sante_connect, op: is_true }
 
-  - id: REG-02
-    category: reglementaire
-    label: Conformité RGPD déclarée
-    severity: bloquant
-    all:
-      - { path: reglementaire.conformite_rgpd, op: is_true }
-
-  - id: REG-03
-    category: reglementaire
-    label: Analyse d'impact (AIPD) disponible
+  - id: PER-03
+    category: cybersécurité
+    label: Rapport de test d'intrusion récent et plan de correctifs
     severity: majeur
     all:
-      - { path: reglementaire.aipd_realisee, op: is_true }
+      - { path: risques.contraintes_reglementaires.pentest_recent, op: is_true }
 
-  - id: REG-04
-    category: reglementaire
-    label: Marquage CE et classe précisés si dispositif médical
-    severity: bloquant
-    when: { path: reglementaire.dispositif_medical, op: is_true }
-    all:
-      - { path: reglementaire.marquage_ce, op: is_true }
-      - { path: reglementaire.classe_dm, op: present }
-
-  - id: REG-05
-    category: reglementaire
-    label: Gestion de l'Identité Nationale de Santé (INS)
+  - id: PER-04
+    category: interopérabilité
+    label: DICOM si le logiciel traite de l'imagerie
     severity: majeur
+    when: { path: risques.contraintes_reglementaires.traite_imagerie, op: is_true }
     all:
-      - { path: reglementaire.ins_compatible, op: is_true }
+      - { path: risques.contraintes_reglementaires.dicom, op: is_true }
 
-  - id: REG-06
-    category: reglementaire
-    label: Authentification Pro Santé Connect
+  - id: PER-05
+    category: services socles
+    label: Mon espace santé (DMP) / MSSanté si documents partagés avec le patient ou la ville
     severity: mineur
+    when: { path: risques.contraintes_reglementaires.dmp_mssante, op: present }
     all:
-      - { path: reglementaire.pro_sante_connect, op: is_true }
-
-  # --- Interopérabilité -----------------------------------------------------
-  - id: INT-01
-    category: interoperabilite
-    label: Au moins un standard d'interopérabilité de santé supporté
-    severity: bloquant
-    any:
-      - { path: interoperabilite.standards, op: contains_any, value: [HL7v2, HL7 v2, FHIR, FHIR R4, DICOM, HPRIM, CDA] }
-      - { path: "interoperabilite.connecteurs[].standard", op: contains_any, value: [HL7v2, HL7 v2, FHIR, FHIR R4, DICOM, HPRIM, CDA] }
-
-  - id: INT-02
-    category: interoperabilite
-    label: Connecteurs décrits (application cible, standard, sens)
-    severity: majeur
-    all:
-      - { path: interoperabilite.connecteurs, op: present }
-
-  # --- Technique ------------------------------------------------------------
-  - id: TEC-01
-    category: technique
-    label: Authentification unique (SSO / annuaire)
-    severity: majeur
-    all:
-      - { path: technique.sso, op: is_true }
-
-  - id: TEC-02
-    category: technique
-    label: Mode dégradé documenté
-    severity: majeur
-    all:
-      - { path: technique.mode_degrade, op: is_true }
-
-  - id: TEC-03
-    category: technique
-    label: Capacité en utilisateurs simultanés annoncée
-    severity: majeur
-    all:
-      - { path: technique.utilisateurs_simultanes_max, op: present }
-
-  - id: TEC-04
-    category: technique
-    label: Type de poste requis (fixe / mobile)
-    severity: mineur
-    all:
-      - { path: technique.type_poste, op: present }
-
-  - id: TEC-05
-    category: technique
-    label: Plage de disponibilité du service précisée
-    severity: mineur
-    all:
-      - { path: technique.disponibilite_horaire, op: present }
-
-  # --- Modèle métier (indispensable à la simulation) -------------------------
-  - id: MET-01
-    category: metier
-    label: Rôles utilisateurs ciblés
-    severity: bloquant
-    any:
-      - { path: metier.roles_cibles, op: present }
-      - { path: "metier.points_de_contact[].roles", op: present }
-
-  - id: MET-02
-    category: metier
-    label: Tâches prises en charge décrites (points de contact)
-    severity: bloquant
-    all:
-      - { path: metier.points_de_contact, op: present }
-
-  - id: MET-03
-    category: metier
-    label: Nombre maximal d'éléments par saisie précisé pour chaque tâche
-    severity: majeur
-    when: { path: metier.points_de_contact, op: present }
-    all:
-      - { path: "metier.points_de_contact[].elements_max_par_saisie", op: present, mode: each }
-
-  - id: MET-04
-    category: metier
-    label: Temps de saisie moyen annoncé pour chaque tâche
-    severity: mineur
-    when: { path: metier.points_de_contact, op: present }
-    all:
-      - { path: "metier.points_de_contact[].duree_saisie_sec", op: present, mode: each }
+      - { path: risques.contraintes_reglementaires.dmp_mssante, op: is_true }

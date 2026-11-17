@@ -1,4 +1,4 @@
-.PHONY: install test lint format demo demo-llm serve ollama-pull docker-up clean
+.PHONY: install test lint format demo demo-llm fidelite scenarios serve ollama-pull docker-up clean
 
 PY ?= python3
 MODEL ?= qwen3:8b
@@ -16,21 +16,32 @@ format:
 	ruff check --fix src tests
 	ruff format src tests
 
-# Démo complète SANS LLM : journal synthétique -> calibration -> audit
+REF = src/blocapta/data/archetypes/bloc_reference.yaml
+
+# Démo complète SANS LLM sur le bloc de référence (données OPROOM)
 demo:
 	mkdir -p out
-	blocapta generate-log -o out/demo_bloc_log.csv
-	blocapta calibrate out/demo_bloc_log.csv -o out/parcours_calibre.yaml
-	blocapta template -o out/questionnaire_dsi.md --answers out/reponses.yaml
-	blocapta apply-answers examples/questionnaire/reponses_exemple.yaml -o out/hopital.yaml
-	blocapta audit out/hopital.yaml examples/specs/archivactes.yaml --no-llm -o out/rapport_audit.md
-	@echo "Rapport : out/rapport_audit.md / .html"
+	blocapta fidelite --replications 6 --workers 4
+	blocapta fiche examples/fiches/scantrace.yaml --no-llm -o out/agent1_scantrace.json
+	blocapta audit $(REF) examples/fiches/scantrace.yaml --no-llm --workers 4 -o out/rapport_scantrace.md
+	blocapta audit $(REF) examples/fiches/archivactes.yaml --no-llm --workers 4 -o out/rapport_archivactes.md
+	@echo "Rapports : out/rapport_*.md / .html"
 
-# Même démo avec Ollama (extraction depuis la brochure texte + rédaction LLM)
+# Test de fidélité du jumeau (Stop/Go)
+fidelite:
+	blocapta fidelite --replications 10 --workers 4
+
+# Les scénarios fil rouge du cahier des charges
+scenarios:
+	for s in examples/scenarios/*.yaml; do \
+		blocapta simulate $(REF) --software examples/fiches/archivactes.yaml --days 28 --replications 4 --workers 4 --scenario $$s; \
+	done
+
+# Avec Ollama : extraction d'une brochure en texte libre + rédaction du rapport par le LLM
 demo-llm:
 	mkdir -p out
-	blocapta validate-spec examples/specs/archivactes_brochure.txt -o out/fiche_extraite.yaml
-	blocapta audit examples/hospitals/ch_exemple.yaml examples/specs/archivactes_brochure.txt -o out/rapport_audit_llm.md
+	blocapta fiche examples/fiches/archivactes_brochure.txt --hospital $(REF) --save-fiche out/fiche_extraite.yaml
+	blocapta audit $(REF) examples/fiches/archivactes_brochure.txt --workers 4 -o out/rapport_audit_llm.md
 
 serve:
 	blocapta serve --reload

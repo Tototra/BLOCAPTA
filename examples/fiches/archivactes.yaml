@@ -1,0 +1,104 @@
+# Fiche logiciel (template Blocapta v0.1) — exemple FICTIF.
+# Reproduit le cas d'origine : un outil de traçabilité qui n'enregistre qu'UN acte par saisie,
+# alors que les chirurgiens réalisent souvent plusieurs actes par intervention.
+version_template: "0.1"
+
+identite:
+  nom_version: ArchivActes v2.3
+  editeur: MedTrace SAS (société fictive)
+  type_outil: Traçabilité des actes opératoires
+  statut_projet: À l'étude
+  classe_reglementaire: Logiciel non dispositif médical
+  auteur_date: Ingénieur DSI, 14/11/2026
+  sources: [Démonstration de l'éditeur, Brochure commerciale]
+
+contexte:
+  probleme: >
+    Les actes opératoires sont tracés dans le logiciel de bloc avec des écrans peu adaptés.
+    Les chirurgiens saisissent tardivement et des actes manquent au moment du codage PMSI.
+  situation_actuelle: Saisie dans le logiciel de bloc en fin d'intervention, sur le poste de la salle.
+  resultat_attendu: Moins d'actes non codés à la clôture du séjour (cible inférieure à 1 %).
+
+acteurs:
+  - role: Chirurgien
+    utilise_logiciel: true
+    actions: Sélectionne et valide chaque acte CCAM réalisé
+    moment_parcours: En salle, en fin d'intervention
+    frequence: À chaque intervention
+    formation: 30 minutes
+  - role: IBODE
+    utilise_logiciel: false
+    actions: Aucune action dans le logiciel
+  - role: DIM
+    utilise_logiciel: false
+    actions: Consulte les actes transmis au PMSI
+
+perimetre:
+  fonctions_incluses: [Saisie des actes CCAM, Transmission des actes au PMSI]
+  fonctions_exclues: [Compte rendu opératoire, Traçabilité des dispositifs médicaux]
+  salles_specialites: Toutes les salles, toutes les spécialités
+  etapes_parcours: [en_salle]
+  volume: 35 interventions par jour, 30 chirurgiens
+
+processus:
+  - numero: 1
+    etape: Tracer les actes de l'intervention
+    qui: Chirurgien
+    action: Ouvrir la fiche, sélectionner l'acte, valider (un acte par fiche)
+    moment: en_salle
+    duree_sans_min: 0.5
+    duree_avec_min: 0.5
+    duree_ouverture_saisie_min: 1.25
+    unite_duree: par_element
+    elements_max_par_saisie: 1
+    source_duree: Démonstration de l'éditeur
+    niveau_preuve: declaration_editeur
+    tache_bloc: tracabilite_actes
+
+donnees:
+  donnees_saisies: Actes CCAM par sélection dans une liste
+  donnees_produites: Liste des actes réalisés, envoi au PMSI
+  liens_logiciels:
+    - { cible: PMSI, standard: HL7v2, sens: sortant }
+  mode_echange: Temps réel, automatique
+  materiel: Poste fixe en salle
+  type_poste: fixe
+  donnees_patient_nominatives: true
+
+fiabilite:
+  disponibilite_pct: 99.0
+  disponibilite_source: Contrat de service de l'éditeur
+  mode_degrade: Saisie différée dans le logiciel de bloc, à reprendre après la panne
+  pannes_connues: Inconnu
+  support: Téléphone de 8 h à 18 h, réponse sous 4 h
+  support_sur_site_jours: 0
+  utilisateurs_simultanes_max: 6
+
+deploiement:
+  calendrier: Tout le bloc en une fois
+  formation_initiale: 30 minutes par chirurgien, avant le démarrage
+  accompagnement: Inconnu
+
+risques:
+  contraintes_reglementaires:
+    dispositif_medical: false
+    conformite_rgpd: true
+    aipd_realisee: false
+    hebergement: cloud_hds
+    hds_certifie: true
+    ins_integre: true
+    tracabilite_acces: true
+    chiffrement_tls: true
+    gestion_droits_rbac: true
+    matrice_flux: true
+    pca_pra: true
+    sso: true
+  risques_patient: Aucun risque direct identifié (outil administratif) ; risque indirect d'actes non tracés.
+  risques_organisation: Temps médical supplémentaire si plusieurs actes par intervention.
+
+preuves:
+  sites_utilisateurs: Inconnu
+  niveau_preuve: declaration_editeur
+
+indicateurs:
+  - { indicateur: Actes non codés à la clôture, valeur_actuelle: "4 %", cible: "1 %" }

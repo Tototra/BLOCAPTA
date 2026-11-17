@@ -210,12 +210,25 @@ class HumanLayer:
                 series.append(round(float(np.mean([a.history[d] for a in agents])), 4))
             trust_by_day[pool] = series
         weeks = max(self.sw_durations_by_week) + 1 if self.sw_durations_by_week else 0
+        families: dict[str, list[Agent]] = defaultdict(list)
+        for a in self.everyone:
+            families[a.role].append(a)
+        trust_by_family = {}
+        usage_by_family = {}
+        for fam, agents in families.items():
+            n = min(days, min(len(a.history) for a in agents))
+            trust_by_family[fam] = [round(float(np.mean([a.history[d] for a in agents if not a.label] or [a.history[d] for a in agents])), 4) for d in range(n)]
+            uses = sum(a.uses for a in agents)
+            if uses and any(a.pool in self.user_pools for a in agents):
+                usage_by_family[fam] = round(100 * sum(a.tool_uses for a in agents) / uses, 2)
         special = {
             f"{a.label} ({a.pool})": [round(x, 4) for x in a.history[:days]] for a in self.everyone if a.label
         }
         return {
             "trust_by_day": trust_by_day,
             "special_agents": special,
+            "trust_by_family": trust_by_family,
+            "usage_by_family": usage_by_family,
             "sw_minutes_by_week": [
                 round(float(np.mean(self.sw_durations_by_week[w])), 3) if self.sw_durations_by_week.get(w) else 0.0
                 for w in range(weeks)

@@ -1,7 +1,7 @@
 """Modèle d'un logiciel testé dans le jumeau (brique C).
 
-Il est dérivé de la fiche technique (``from_spec_sheet``) mais peut aussi être
-écrit ou ajusté à la main en YAML.
+Il est dérivé de la fiche logiciel par l'agent de normalisation
+(``spec.normalize.fiche_to_software``) mais peut aussi être écrit ou ajusté à la main en YAML.
 """
 
 from __future__ import annotations
@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 
 from .distributions import Distribution, Fixed
 from .hospital import TimeWindow
-from .spec_sheet import SpecSheet
 
 
 class TouchPoint(BaseModel):
@@ -53,36 +52,6 @@ class SoftwareModel(BaseModel):
     sso: bool | None = None
     reliability: Reliability = Field(default_factory=Reliability)
 
-    @classmethod
-    def from_spec_sheet(cls, spec: SpecSheet) -> SoftwareModel:
-        """Conversion déterministe fiche technique → modèle de simulation."""
-        tps = []
-        for pc in spec.metier.points_de_contact:
-            kwargs: dict = {
-                "task_kind": pc.tache,
-                "replaces_current": pc.remplace_systeme_existant,
-                "roles": pc.roles or spec.metier.roles_cibles,
-                "max_items_per_entry": pc.elements_max_par_saisie,
-                "requires_fixed_workstation": (pc.poste_requis or spec.technique.type_poste) == "fixe",
-            }
-            if pc.duree_saisie_sec is not None:
-                kwargs["time_per_entry_min"] = Fixed(value=pc.duree_saisie_sec / 60)
-            if pc.duree_par_element_sec is not None:
-                kwargs["time_per_item_min"] = Fixed(value=pc.duree_par_element_sec / 60)
-            tps.append(TouchPoint(**kwargs))
-        return cls(
-            name=spec.produit.nom or "logiciel_inconnu",
-            vendor=spec.produit.editeur,
-            version=spec.produit.version,
-            touchpoints=tps,
-            interfaces=[
-                SoftwareInterface(target_category=c.cible, standard=c.standard, direction=c.sens)
-                for c in spec.interoperabilite.connecteurs
-            ],
-            max_concurrent_users=spec.technique.utilisateurs_simultanes_max,
-            availability=_parse_availability(spec.technique.disponibilite_horaire),
-            sso=spec.technique.sso,
-        )
 
 
 def _parse_availability(text: str | None) -> TimeWindow | None:

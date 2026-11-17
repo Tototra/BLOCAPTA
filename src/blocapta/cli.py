@@ -129,28 +129,60 @@ def configure(
 
 
 # ------------------------------------------------------------ fiche technique
-@app.command("validate-spec")
-def validate_spec_cmd(
-    spec: Path,
-    hospital: Path | None = typer.Option(None, help="Pour aligner les tâches sur celles de l'hôpital"),
-    llm: bool = typer.Option(True, help="Utiliser le LLM (obligatoire pour PDF/texte libre)"),
-    output: Path | None = typer.Option(None, "-o", help="Sauvegarde la fiche structurée (YAML)"),
+@app.command("fiche")
+def fiche_cmd(
+    fiche: Path = typer.Argument(..., help="Fiche logiciel : YAML/JSON du template, ou PDF/Word/texte (extraction LLM)"),
+    hospital: Path | None = typer.Option(None, help="Pour relier les étapes aux tâches du jumeau"),
+    llm: bool = typer.Option(True, help="Utiliser le LLM (obligatoire pour PDF/Word/texte libre)"),
+    output: Path | None = typer.Option(None, "-o", help="Sortie JSON de l'agent 1 (format de la spécification)"),
+    save_fiche: Path | None = typer.Option(None, help="Sauvegarde la fiche structurée extraite (YAML)"),
 ):
-    """Valide une fiche technique éditeur contre les critères minimum."""
+    """Contrôle de complétude (agent 1) et conformité réglementaire Go/NoGo d'une fiche logiciel."""
     kinds = load_hospital(hospital).documentation_kinds() if hospital else None
-    v = validate_document(spec, _llm("extraction", llm), known_task_kinds=kinds)
-    t = Table(title=f"Fiche « {v.spec.produit.nom} » — complétude {v.score} %")
-    for col in ("Critère", "Gravité", "Statut", "Libellé"):
-        t.add_column(col)
-    colors = {"ok": "green", "echec": "red", "non_applicable": "dim"}
-    for r in v.results:
-        t.add_row(r.id, r.severity, f"[{colors[r.status]}]{r.status}[/]", r.label)
-    console.print(t)
-    console.print("[green]ADMISSIBLE[/]" if v.admissible else "[red]NON ADMISSIBLE[/] (critère bloquant en échec)")
-    for q in v.questions:
-        console.print(f"  • {q.question}")
+    v = validate_document(fiche, _llm("extraction", llm), known_task_kinds=kinds)
+    c = v.completude
+    colors = {"NON_ANALYSABLE": "red", "ANALYSABLE_AVEC_RESERVES": "yellow", "ANALYSABLE": "green"}
+    console.print(f"[bold {colors[c.verdict]}]{c.verdict}[/] — confiance {c.confiance} — {c.score_completude}")
+    if c.champs:
+        t = Table(title="Champs à compléter")
+        for col in ("Champ", "Statut", "État", "Raison"):
+            t.add_column(col)
+        for ch in c.champs:
+            if ch.statut_requis != "F":
+                t.add_row(f"{ch.id} {ch.champ}", ch.statut_requis + (" (critique)" if ch.critique else ""), ch.statut_champ, ch.raison)
+        console.print(t)
+    for a in c.alertes:
+        console.print(f"[yellow]Alerte {a.type}[/] ({a.champ_id}) : {a.detail}")
+    console.print(f"\n[bold]Réglementaire : {v.go_nogo}[/] (conformité {v.score_reglementaire} %)")
+    for r in v.reglementaire:
+        if r.status == "echec":
+            console.print(f"  [red]{r.id}[/] [{r.severity}] {r.label}")
+    console.print("\n" + c.resume)
     if output:
-        output.write_text(yaml.safe_dump(v.spec.model_dump(), allow_unicode=True, sort_keys=False), encoding="utf-8")
+        output.write_text(c.model_dump_json(indent=2), encoding="utf-8")
+    if save_fiche:
+        save_fiche.write_text(yaml.safe_dump(v.fiche.model_dump(), allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+
+@app.command("fiche-template")
+def fiche_template(output: Path = typer.Option(Path("fiche_logiciel.yaml"), "-o")):
+    """Génère un modèle vide de fiche logiciel (template v0.1, 11 blocs) à remplir."""
+    from .models.fiche import Acteur, EtapeProcessus, FicheLogiciel, Indicateur, LienLogiciel
+
+    blank = FicheLogiciel(
+        acteurs=[Acteur(role="IBODE")],
+        processus=[EtapeProcessus(etape="Étape qui change")],
+        indicateurs=[Indicateur(indicateur="Indicateur à suivre")],
+    )
+    blank.donnees.liens_logiciels = [LienLogiciel(cible="DPI")]
+    header = (
+        "# Fiche logiciel à analyser — template Blocapta v0.1\n"
+        "# Règles : des faits et des chiffres avec unités ; une source par affirmation ;\n"
+        "# écrire « Inconnu » plutôt que laisser vide ; aucune donnée de patient ni nom de soignant.\n"
+        "# Vérifier ensuite avec :  blocapta fiche fiche_logiciel.yaml --no-llm\n"
+    )
+    output.write_text(header + yaml.safe_dump(blank.model_dump(), allow_unicode=True, sort_keys=False), encoding="utf-8")
+    console.print(f"[green]Modèle de fiche :[/] {output}")
 
 
 # ---------------------------------------------------------------- calibration
@@ -204,7 +236,7 @@ def calibrate(
 @app.command()
 def simulate(
     hospital: Path,
-    software: Path = typer.Option(..., help="Modèle logiciel YAML ou fiche technique structurée"),
+    software: Path = typer.Option(..., help="Fiche logiciel (template) ou modèle logiciel YAML"),
     days: int = 20,
     replications: int = 20,
     seed: int = 42,
@@ -215,10 +247,11 @@ def simulate(
     """Simule l'hôpital sans et avec le logiciel et compare."""
     h = load_hospital(hospital)
     data = yaml.safe_load(software.read_text(encoding="utf-8"))
-    if "produit" in data:
-        from .models.spec_sheet import SpecSheet
+    if "identite" in data:  # fiche logiciel (template v0.1)
+        from .models.fiche import FicheLogiciel
+        from .spec import fiche_to_software
 
-        sw = SoftwareModel.from_spec_sheet(SpecSheet.model_validate(data))
+        sw, _ = fiche_to_software(FicheLogiciel.model_validate(data), h.documentation_kinds())
     else:
         sw = SoftwareModel.model_validate(data)
     with console.status("Simulation en cours…"):
@@ -247,9 +280,9 @@ def simulate(
 @app.command()
 def audit(
     hospital: Path,
-    spec: Path,
-    days: int = 20,
-    replications: int = 20,
+    fiche: Path = typer.Argument(..., help="Fiche logiciel (YAML du template, PDF, Word, texte)"),
+    days: int = 28,
+    replications: int = 10,
     seed: int = 42,
     workers: int = 1,
     llm: bool = typer.Option(True, help="LLM pour l'extraction de fiche et la rédaction"),
@@ -260,7 +293,7 @@ def audit(
     output.parent.mkdir(parents=True, exist_ok=True)
     with console.status("Audit en cours…"):
         r = run_audit(
-            hospital, spec, days=days, replications=replications, seed=seed, workers=workers,
+            hospital, fiche, days=days, replications=replications, seed=seed, workers=workers,
             extraction_llm=_llm("extraction", llm), report_llm=_llm("report", llm),
             scenario=_scenario(scenario),
         )
@@ -268,7 +301,7 @@ def audit(
     output.with_suffix(".html").write_text(r.html, encoding="utf-8")
     output.with_suffix(".json").write_text(r.facts.model_dump_json(indent=2), encoding="utf-8")
     s = r.facts.score
-    console.print(f"[bold]Score : {s.score}/100 — {s.level}[/]  (rédaction : {r.narrative.generated_by})")
+    console.print(f"[bold]Score : {s.score}/100 — {s.level}[/] — confiance {s.confidence} (rédaction : {r.narrative.generated_by})")
     console.print(f"[green]Rapport :[/] {output}, {output.with_suffix('.html')}, {output.with_suffix('.json')}")
 
 

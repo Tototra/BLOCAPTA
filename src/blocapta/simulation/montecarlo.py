@@ -18,7 +18,7 @@ from ..models.results import (
     StaticFinding,
 )
 from ..models.software import SoftwareModel
-from .engine import ReplicationResult, Simulation, SimulationOptions, kpi_label, software_gaps, task_key
+from .engine import ReplicationResult, Simulation, SimulationOptions, kpi_label, software_gaps
 
 
 def _one(args) -> ReplicationResult:
@@ -83,30 +83,45 @@ def _severity(ftype: str, hours_per_day: float, share: float, items_per_day: flo
     return "info"
 
 
-def summarise_frictions(runs: list[ReplicationResult]) -> list[FrictionSummary]:
+def summarise_frictions(runs: list[ReplicationResult], hospital: Hospital | None = None) -> list[FrictionSummary]:
+    """Agrège les frictions par (type, tâche, métier) : une friction de même nature vécue dans
+    plusieurs parcours (ex. toutes les spécialités) n'est comptée qu'une fois, avec son ampleur totale."""
     n = max(1, len(runs))
+
+    def family(pool: str) -> str:
+        if hospital is not None and pool in hospital.resources and hospital.resources[pool].role:
+            return hospital.resources[pool].role
+        return pool
+
     groups: dict[tuple, list] = defaultdict(list)
     for r in runs:
         for f in r.frictions:
-            groups[(f.type, f.pathway, f.step, f.role, f.task_kind)].append(f)
-    total_tasks: dict[str, float] = defaultdict(float)
+            groups[(f.type, f.task_kind, family(f.role))].append(f)
+    total_tasks: dict[tuple, float] = defaultdict(float)
     for r in runs:
         for key, c in r.task_counts.items():
-            total_tasks[key] += c
+            pw, step, role, kind = key.split("|")
+            total_tasks[(kind, family(role))] += c
     days = float(np.mean([r.kpis.get("jours_actifs", 1.0) for r in runs])) if runs else 1.0
     out = []
-    for (ftype, pw, step, role, kind), evs in groups.items():
-        tasks = total_tasks.get(task_key(pw, step, role, kind), 0) or 1
+    for (ftype, kind, fam), evs in groups.items():
+        tasks = total_tasks.get((kind, fam), 0) or 1
         occ = len(evs) / n
         hours = sum(e.time_lost_min for e in evs) / 60 / n
         items = sum(e.items_at_risk for e in evs) / n
-        # seules les omissions liées à la cardinalité sont des éléments « à risque » ;
-        # pour la disponibilité il s'agit d'éléments saisis en différé
         risk_items = items if ftype == "cardinalite" else 0.0
         share = min(1.0, len(evs) / tasks)
+        pathways = {e.pathway for e in evs}
+        steps = defaultdict(int)
+        for e in evs:
+            steps[e.step] += 1
         out.append(
             FrictionSummary(
-                type=ftype, pathway=pw, step=step, role=role, task_kind=kind,
+                type=ftype,
+                pathway=next(iter(pathways)) if len(pathways) == 1 else f"{len(pathways)} parcours",
+                step=max(steps, key=steps.get),
+                role=fam,
+                task_kind=kind,
                 occurrences_per_replication=round(occ, 2),
                 affected_share=round(share, 4),
                 time_lost_hours_per_replication=round(hours, 2),
@@ -114,7 +129,7 @@ def summarise_frictions(runs: list[ReplicationResult]) -> list[FrictionSummary]:
                 occurrences_per_day=round(occ / days, 2),
                 time_lost_hours_per_day=round(hours / days, 3),
                 severity=_severity(ftype, hours / days, share, risk_items / days),
-                example=evs[0].detail,
+                example=max(evs, key=lambda e: e.time_lost_min).detail,
             )
         )
     order = {"critique": 0, "majeure": 1, "mineure": 2, "info": 3}
@@ -162,21 +177,25 @@ def static_analysis(hospital: Hospital, software: SoftwareModel) -> tuple[list[S
             StaticFinding(type="couverture", severity="majeure", detail="L'hôpital utilise un SSO mais le logiciel ne le supporte pas.")
         )
     for tp in software.touchpoints:
+        if not tp.max_items_per_entry:
+            continue
+        over: dict[float, list[str]] = defaultdict(list)
         for p in hospital.pathways:
             for s in p.steps:
                 for d in s.documentation:
-                    if d.kind == tp.task_kind and tp.max_items_per_entry:
-                        mean_items = d.items.mean_value()
-                        if mean_items > tp.max_items_per_entry:
-                            findings.append(
-                                StaticFinding(
-                                    type="cardinalite", severity="majeure",
-                                    detail=(
-                                        f"'{p.id}/{s.id}' : {mean_items:.2f} éléments en moyenne par tâche '{d.kind}' "
-                                        f"pour un maximum de {tp.max_items_per_entry} par saisie."
-                                    ),
-                                )
-                            )
+                    if d.kind == tp.task_kind and d.items.mean_value() > tp.max_items_per_entry:
+                        over[round(d.items.mean_value(), 2)].append(p.label or p.id)
+        for mean_items, where in sorted(over.items(), reverse=True):
+            scope = where[0] if len(where) == 1 else f"{len(where)} parcours"
+            findings.append(
+                StaticFinding(
+                    type="cardinalite", severity="majeure",
+                    detail=(
+                        f"{scope} : {mean_items:.2f} éléments en moyenne par tâche '{tp.task_kind}' "
+                        f"pour un maximum de {tp.max_items_per_entry} par saisie."
+                    ),
+                )
+            )
     return findings, unused
 
 
@@ -185,6 +204,17 @@ def summarise_human(runs: list[ReplicationResult], scenario) -> HumanSummary | N
     if not hs:
         return None
     roles = sorted({role for h in hs for role in h["trust_by_day"]})
+    families = sorted({f for h in hs for f in h.get("trust_by_family", {})})
+    trust_by_family = {}
+    for fam in families:
+        series = [h["trust_by_family"].get(fam, []) for h in hs]
+        n_f = min(len(x) for x in series) if series else 0
+        trust_by_family[fam] = [round(float(np.mean([x[d] for x in series])), 4) for d in range(n_f)]
+    usage_family = {}
+    for fam in families:
+        u = [h["usage_by_family"][fam] for h in hs if fam in h.get("usage_by_family", {})]
+        if u:
+            usage_family[fam] = round(float(np.mean(u)), 2)
     trust_by_day = {}
     for role in roles:
         series = [h["trust_by_day"].get(role, []) for h in hs]
@@ -209,6 +239,8 @@ def summarise_human(runs: list[ReplicationResult], scenario) -> HumanSummary | N
     return HumanSummary(
         roles=roles,
         trust_by_day=trust_by_day,
+        trust_by_family=trust_by_family,
+        usage_by_family=usage_family,
         special_agents=special,
         usage_rate_by_role=usage,
         final_trust_by_role=final,
@@ -248,7 +280,7 @@ def simulate_audit(
         replications=replications,
         seed=seed,
         kpis=compare(base, soft),
-        frictions=summarise_frictions(soft),
+        frictions=summarise_frictions(soft, hospital),
         static_findings=findings,
         unused_touchpoints=unused,
         scenario=scenario.name if scenario is not None else None,

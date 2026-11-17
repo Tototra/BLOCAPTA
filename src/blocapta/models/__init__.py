@@ -1,4 +1,5 @@
 from .distributions import Distribution
+from .fiche import FicheLogiciel
 from .hospital import (
     Arrivals,
     DocumentationTask,
@@ -11,13 +12,17 @@ from .hospital import (
     TimeWindow,
 )
 from .results import FrictionEvent, KpiComparison, SimulationReport
+from .scenario import HumanFactorConfig, Incident, Scenario
 from .software import SoftwareModel, TouchPoint
-from .spec_sheet import SpecSheet
 
 __all__ = [
     "Arrivals",
     "Distribution",
     "DocumentationTask",
+    "FicheLogiciel",
+    "HumanFactorConfig",
+    "Incident",
+    "Scenario",
     "FrictionEvent",
     "Hospital",
     "InformationSystem",
@@ -27,7 +32,6 @@ __all__ = [
     "Service",
     "SimulationReport",
     "SoftwareModel",
-    "SpecSheet",
     "Step",
     "TimeWindow",
     "TouchPoint",

@@ -1,12 +1,13 @@
-# Rapport d'audit de compatibilité — {{ f.software.name or "logiciel" }}
+# Rapport d'audit — {{ f.software.name or "logiciel" }}
 
-**Établissement :** {{ f.hospital.name }} ({{ f.hospital.archetype or "configuration spécifique" }})
-**Éditeur :** {{ f.software.vendor or "non renseigné" }} — version {{ f.software.version or "non renseignée" }}
+**Établissement :** {{ f.hospital.name }}
+**Éditeur :** {{ f.software.vendor or "non renseigné" }} · **Type d'outil :** {{ f.software.type or "non renseigné" }} · **Statut :** {{ f.software.status or "non renseigné" }}
 **Généré le :** {{ f.generated_at }} · rédaction : {{ n.generated_by }}
 
 ## Verdict
 
 **Score de compatibilité : {{ f.score.score }}/100 — {{ f.score.level }}**
+**Niveau de confiance de l'analyse : {{ f.score.confidence | upper }}** · Fiche : {{ f.validation.verdict }} · Réglementaire : {{ f.validation.go_nogo }}
 
 {{ n.resume_executif }}
 
@@ -25,11 +26,36 @@
 {% if f.headline_kpis %}
 ## Indicateurs clés (moyennes sur {{ f.simulation.replications }} réplications de {{ f.simulation.days }} jours)
 
-| Indicateur | Unité | Situation actuelle | Avec le logiciel | Écart |
+| Indicateur | Unité | Sans l'outil | Avec l'outil | Écart |
 |---|---|---:|---:|---:|
 {% for k in f.headline_kpis -%}
 | {{ k.label }} | {{ k.unit }} | {{ k.baseline|num(2) }} | {{ k.software|num(2) }} | {% if k.delta_pct is not none %}{{ k.delta_pct|signed(1) }} %{% else %}{{ k.delta|signed(2) }}{% endif %} |
 {% endfor %}
+{% endif %}
+
+{% if f.human %}
+## Effets humains (scénario « {{ f.human.scenario }} »)
+
+Confiance moyenne dans l'outil (0 = aucune, 1 = totale), relevée chaque semaine :
+
+{% set nweeks = f.human.weekly_trust_by_role.values()|map('length')|max %}
+| Métier | {% for i in range(nweeks) %}S{{ i + 1 }} | {% endfor %}Utilisation réelle de l'outil |
+|---|{% for i in range(nweeks) %}---:|{% endfor %}---:|
+{% for role, series in f.human.weekly_trust_by_role.items() -%}
+| {{ role }} | {% for x in series %}{{ x|num(2) }} | {% endfor %}{% if role in f.human.usage_rate_by_role %}{{ f.human.usage_rate_by_role[role]|num(0) }} %{% else %}non utilisateur{% endif %} |
+{% endfor %}
+
+{% if f.human.special_agents %}
+Profils particuliers :
+{% for name, v in f.human.special_agents.items() %}
+- {{ name }} : confiance de {{ v.debut|num(2) }} au départ à {{ v.fin|num(2) }} en fin de période
+{% endfor %}
+{% endif %}
+
+- Pannes simulées : {{ f.human.outages|num(1) }} en moyenne ({{ f.human.outage_minutes|num(0) }} min au total)
+- Temps moyen d'une saisie avec l'outil, semaine par semaine (courbe d'apprentissage) : {% for x in f.human.sw_minutes_by_week %}{{ x|num(2) }} min{% if not loop.last %} → {% endif %}{% endfor %}
+
+*Mécanismes : aversion à la perte (une panne fait baisser la confiance environ deux fois plus qu'un usage réussi ne la fait monter), influence des collègues pondérée par l'autorité, courbe d'apprentissage. Les coefficients marqués « à calibrer » ne sont pas encore mesurés : lire ces résultats comme des tendances.*
 {% endif %}
 
 {% if f.simulation and f.simulation.frictions %}
@@ -49,24 +75,50 @@
 {% endfor %}
 {% endif %}
 
-## Conformité de la fiche technique
+## Contrôle de complétude de la fiche (agent 1)
 
-Complétude : **{{ f.validation.completeness_score }} %** — {{ "admissible" if f.validation.admissible else "NON admissible" }}
+Verdict **{{ f.validation.verdict }}** — confiance **{{ f.validation.confidence }}** — obligatoires {{ f.validation.completeness.obligatoires }}, recommandés {{ f.validation.completeness.recommandes }}, facultatifs {{ f.validation.completeness.facultatifs }}.
+
+{% if f.validation.incomplete_fields %}
+| Champ | Statut requis | État | Raison |
+|---|---|---|---|
+{% for c in f.validation.incomplete_fields -%}
+| {{ c.id }} — {{ c.champ }} | {{ c.requis }} | {{ c.statut }} | {{ c.raison }} |
+{% endfor %}
+{% endif %}
+
+{% if f.validation.alerts %}
+Alertes :
+{% for a in f.validation.alerts %}
+- **{{ a.type }}** ({{ a.champ }}) : {{ a.detail }}
+{% endfor %}
+{% endif %}
+
+## Conformité réglementaire et interopérabilité
+
+Verdict **{{ f.validation.go_nogo }}** — conformité pondérée {{ f.validation.regulatory_score }} %.
 
 {% if f.validation.failed %}
-| Critère | Gravité | Libellé |
+| Critère | Niveau | Exigence non démontrée |
 |---|---|---|
 {% for c in f.validation.failed -%}
 | {{ c.id }} | {{ c.severity }} | {{ c.label }} |
 {% endfor %}
 {% else %}
-Tous les critères sont respectés.
+Toutes les exigences applicables sont démontrées par la fiche.
 {% endif %}
 
 {% if n.questions_editeur %}
-## Questions à poser à l'éditeur
+## Questions à poser à l'auteur de la fiche ou à l'éditeur
 {% for q in n.questions_editeur %}
 {{ loop.index }}. {{ q }}
+{% endfor %}
+{% endif %}
+
+{% if f.hypotheses %}
+## Hypothèses faites pour l'analyse
+{% for h in f.hypotheses %}
+- {{ h }}
 {% endfor %}
 {% endif %}
 
@@ -85,10 +137,19 @@ Tous les critères sont respectés.
 | {{ l.reason }} | {{ l.points }} |
 {% endfor %}
 
+{% if f.to_calibrate %}
+## Paramètres à calibrer
+
+Ces valeurs ne sont pas encore mesurées sur le terrain ; elles conditionnent la précision des résultats.
+{% for p in f.to_calibrate %}
+- {{ p }}
+{% endfor %}
+{% endif %}
+
 {% if f.simulation %}
 ## Annexe — tous les indicateurs
 
-| Indicateur | Unité | Actuel (IC 95 %) | Avec logiciel (IC 95 %) |
+| Indicateur | Unité | Sans l'outil (IC 95 %) | Avec l'outil (IC 95 %) |
 |---|---|---|---|
 {% for k in f.simulation.kpis -%}
 | {{ k.label }} | {{ k.unit }} | {{ k.baseline.mean|num(2) }} [{{ k.baseline.ci_low|num(2) }} ; {{ k.baseline.ci_high|num(2) }}] | {{ k.software.mean|num(2) }} [{{ k.software.ci_low|num(2) }} ; {{ k.software.ci_high|num(2) }}] |
@@ -96,4 +157,4 @@ Tous les critères sont respectés.
 {% endif %}
 
 ---
-*Méthode : simulation à événements discrets du fonctionnement de l'établissement (situation actuelle vs avec le logiciel), mêmes arrivées de patients dans les deux scénarios, graine {{ f.simulation.seed if f.simulation else "-" }}. Les chiffres du texte sont vérifiés automatiquement contre les résultats de simulation{% if n.unverified_numbers %} — chiffres non vérifiés détectés et écartés : {{ n.unverified_numbers|join(", ") }}{% endif %}. Les résultats dépendent de la qualité des données de paramétrage de l'établissement.*
+*Méthode : jumeau numérique du bloc opératoire (simulation à événements discrets et à agents), scénarios « sans outil » et « avec outil » sur les mêmes patients, graine {{ f.simulation.seed if f.simulation else "-" }}. Blocapta aide à décider : il ne remplace ni l'avis des soignants ni un essai réel. Les chiffres du texte sont vérifiés automatiquement contre les résultats de simulation{% if n.unverified_numbers %} — chiffres non vérifiés écartés : {{ n.unverified_numbers|join(", ") }}{% endif %}.*

@@ -5,10 +5,11 @@ import pytest
 import yaml
 
 from blocapta.configurator import load_hospital
-from blocapta.models import SoftwareModel, SpecSheet
+from blocapta.models import SoftwareModel
 from blocapta.models.scenario import HumanFactorConfig, Incident, Scenario
 from blocapta.simulation import simulate_audit
 from blocapta.simulation.human import Agent, HumanLayer
+from blocapta.spec import fiche_to_software
 
 from .conftest import EXAMPLES
 
@@ -23,8 +24,9 @@ def ref():
 
 @pytest.fixture(scope="module")
 def sw():
-    spec = SpecSheet.model_validate(yaml.safe_load((EXAMPLES / "specs" / "archivactes.yaml").read_text()))
-    return SoftwareModel.from_spec_sheet(spec)
+    from .conftest import load_fiche
+
+    return fiche_to_software(load_fiche("archivactes"))[0]
 
 
 def _trust(ref, sw, sc, role, day):

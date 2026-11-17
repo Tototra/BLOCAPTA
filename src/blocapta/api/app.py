@@ -29,13 +29,13 @@ from ..configurator import (
     render_markdown,
 )
 from ..llm import get_llm
+from ..models.fiche import FicheLogiciel
 from ..models.scenario import Scenario
 from ..models.software import SoftwareModel
-from ..models.spec_sheet import SpecSheet
 from ..pipeline import run_audit
 from ..settings import get_settings
 from ..simulation import simulate_audit
-from ..spec import validate_document, validate_spec
+from ..spec import fiche_to_software, validate_document, validate_fiche
 
 app = FastAPI(
     title="BLOCAPTA",
@@ -120,13 +120,13 @@ def questionnaire_apply(body: AnswersIn) -> dict:
 
 
 # ------------------------------------------------------- fiches techniques
-@app.post("/specs/validate")
-async def specs_validate(file: UploadFile | None = File(None), spec_json: str | None = Form(None)) -> dict:
-    """Valide une fiche : fichier (PDF, TXT, JSON, YAML) ou JSON conforme au schéma SpecSheet."""
-    if spec_json:
-        return validate_spec(SpecSheet.model_validate_json(spec_json)).model_dump()
+@app.post("/fiches/validate")
+async def fiches_validate(file: UploadFile | None = File(None), fiche_json: str | None = Form(None)) -> dict:
+    """Agent 1 + grille réglementaire : fichier (YAML, JSON, PDF, Word, texte) ou JSON FicheLogiciel."""
+    if fiche_json:
+        return validate_fiche(FicheLogiciel.model_validate_json(fiche_json)).model_dump()
     if file is None:
-        raise HTTPException(422, "Fournir `file` ou `spec_json`")
+        raise HTTPException(422, "Fournir `file` ou `fiche_json`")
     suffix = Path(file.filename or "fiche.txt").suffix
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(await file.read())
@@ -138,9 +138,9 @@ async def specs_validate(file: UploadFile | None = File(None), spec_json: str | 
         Path(tmp.name).unlink(missing_ok=True)
 
 
-@app.get("/specs/schema")
-def specs_schema() -> dict:
-    return SpecSheet.model_json_schema()
+@app.get("/fiches/schema")
+def fiches_schema() -> dict:
+    return FicheLogiciel.model_json_schema()
 
 
 # --------------------------------------------------------- configuration
@@ -202,7 +202,7 @@ async def calibration(
 class SimulationIn(BaseModel):
     hospital: dict
     software: SoftwareModel | None = None
-    spec: SpecSheet | None = None
+    fiche: FicheLogiciel | None = None
     scenario: Scenario | None = None
     days: int = Field(20, ge=1, le=365)
     replications: int = Field(20, ge=1, le=500)
@@ -212,9 +212,9 @@ class SimulationIn(BaseModel):
 @app.post("/simulations")
 def simulations(body: SimulationIn) -> dict:
     h = _hospital(body.hospital)
-    sw = body.software or (SoftwareModel.from_spec_sheet(body.spec) if body.spec else None)
+    sw = body.software or (fiche_to_software(body.fiche, h.documentation_kinds())[0] if body.fiche else None)
     if sw is None:
-        raise HTTPException(422, "Fournir `software` ou `spec`")
+        raise HTTPException(422, "Fournir `software` ou `fiche`")
     return simulate_audit(h, sw, body.days, body.replications, body.seed, scenario=body.scenario).model_dump()
 
 
@@ -238,17 +238,17 @@ def fidelity(body: FidelityIn) -> dict:
 @app.post("/audits")
 async def audits(
     hospital_file: UploadFile = File(..., description="Configuration hôpital YAML/JSON (peut utiliser extends)"),
-    spec_file: UploadFile = File(..., description="Fiche technique PDF/TXT/JSON/YAML"),
-    days: int = Form(20),
-    replications: int = Form(20),
+    fiche_file: UploadFile = File(..., description="Fiche logiciel (YAML du template, PDF, Word, texte)"),
+    days: int = Form(28),
+    replications: int = Form(10),
     seed: int = Form(42),
     use_llm_report: bool = Form(True),
     scenario_json: str | None = Form(None, description="Scénario (JSON) optionnel"),
 ) -> dict:
     h = _hospital(_parse_config((await hospital_file.read()).decode("utf-8")))
-    suffix = Path(spec_file.filename or "fiche.txt").suffix
+    suffix = Path(fiche_file.filename or "fiche.txt").suffix
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-        tmp.write(await spec_file.read())
+        tmp.write(await fiche_file.read())
     try:
         r = run_audit(
             h, Path(tmp.name), days=days, replications=replications, seed=seed,
@@ -261,6 +261,7 @@ async def audits(
     finally:
         Path(tmp.name).unlink(missing_ok=True)
     return {
+        "agent_1": r.validation.completude.model_dump(),
         "score": r.facts.score.model_dump(),
         "facts": r.facts.model_dump(),
         "narrative": r.narrative.model_dump(),

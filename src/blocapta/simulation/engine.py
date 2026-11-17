@@ -119,6 +119,8 @@ def software_gaps(hospital: Hospital, software: SoftwareModel, system_id: str) -
     apps = hospital.information_system.applications
     covered = {i.target_category.lower() for i in software.interfaces if i.direction != "entrant"}
     category = apps[system_id].category.lower()
+    if category == "papier":  # remplacer un support papier ne demande aucune interface
+        return False, []
     downstream = sorted(
         {apps[i.target].category for i in hospital.information_system.interfaces if i.source == system_id}
     )

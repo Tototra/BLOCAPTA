@@ -18,9 +18,10 @@ def test_api_archetypes_and_questionnaire():
     assert client.get("/questionnaire.md").text.startswith("# Questionnaire")
 
 
-def test_api_validate_spec_json(spec):
-    r = client.post("/specs/validate", data={"spec_json": spec.model_dump_json()})
-    assert r.status_code == 200 and r.json()["admissible"]
+def test_api_validate_fiche_json(fiche):
+    r = client.post("/fiches/validate", data={"fiche_json": fiche.model_dump_json()})
+    assert r.status_code == 200
+    assert r.json()["completude"]["verdict"] == "ANALYSABLE_AVEC_RESERVES"
 
 
 def test_api_patch():
@@ -34,10 +35,10 @@ def test_api_patch():
     assert r.json()["ok"]
 
 
-def test_api_simulation(spec):
+def test_api_simulation(fiche):
     r = client.post(
         "/simulations",
-        json={"hospital": {"id": "t", "name": "t", "extends": "ch_general"}, "spec": spec.model_dump(), "days": 3, "replications": 1},
+        json={"hospital": {"id": "t", "name": "t", "extends": "ch_general"}, "fiche": fiche.model_dump(), "days": 3, "replications": 1},
     )
     assert r.status_code == 200
     assert any(f["type"] == "cardinalite" for f in r.json()["frictions"])
@@ -51,7 +52,7 @@ def test_api_audit(monkeypatch):
     try:
         files = {
             "hospital_file": ("h.yaml", (EXAMPLES / "hospitals" / "ch_exemple.yaml").read_bytes()),
-            "spec_file": ("s.yaml", (EXAMPLES / "specs" / "archivactes.yaml").read_bytes()),
+            "fiche_file": ("s.yaml", (EXAMPLES / "fiches" / "archivactes.yaml").read_bytes()),
         }
         r = client.post("/audits", files=files, data={"days": 3, "replications": 1})
         assert r.status_code == 200, r.text
@@ -80,7 +81,7 @@ def test_cli_full_flow(tmp_path):
     out = tmp_path / "rapport.md"
     res = runner.invoke(
         cli,
-        ["audit", str(tmp_path / "h.yaml"), str(EXAMPLES / "specs" / "archivactes.yaml"),
+        ["audit", str(tmp_path / "h.yaml"), str(EXAMPLES / "fiches" / "archivactes.yaml"),
          "--days", "3", "--replications", "1", "--no-llm", "-o", str(out)],
     )
     assert res.exit_code == 0, res.output
@@ -93,3 +94,14 @@ def test_cli_calibrate(tmp_path):
     assert runner.invoke(cli, ["generate-log", "-o", str(log), "--days", "30"]).exit_code == 0
     res = runner.invoke(cli, ["calibrate", str(log), "-o", str(tmp_path / "p.yaml")])
     assert res.exit_code == 0, res.output
+
+
+def test_cli_fiche_and_template(tmp_path):
+    out = tmp_path / "agent1.json"
+    res = runner.invoke(cli, ["fiche", str(EXAMPLES / "fiches" / "scantrace.yaml"), "--no-llm", "-o", str(out)])
+    assert res.exit_code == 0, res.output
+    assert json.loads(out.read_text())["verdict"] == "ANALYSABLE_AVEC_RESERVES"
+    tpl = tmp_path / "fiche.yaml"
+    assert runner.invoke(cli, ["fiche-template", "-o", str(tpl)]).exit_code == 0
+    res = runner.invoke(cli, ["fiche", str(tpl), "--no-llm"])
+    assert "NON_ANALYSABLE" in res.output
