@@ -43,6 +43,7 @@ def run_audit(
     report_llm: LLMClient | None = None,
     software_override: SoftwareModel | None = None,
     simulate_even_if_not_admissible: bool = False,
+    scenario=None,
 ) -> AuditResult:
     h = hospital if isinstance(hospital, Hospital) else load_hospital(hospital)
     if isinstance(spec, SpecSheet):
@@ -53,7 +54,9 @@ def run_audit(
     sim = None
     if validation.admissible or simulate_even_if_not_admissible:
         software = software_override or SoftwareModel.from_spec_sheet(validation.spec)
-        sim = simulate_audit(h, software, days=days, replications=replications, seed=seed, workers=workers)
+        sim = simulate_audit(
+            h, software, days=days, replications=replications, seed=seed, workers=workers, scenario=scenario
+        )
 
     score = compute_score(validation, sim)
     facts = build_facts(h, validation, score, sim)

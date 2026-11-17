@@ -28,6 +28,14 @@ class TouchPoint(BaseModel):
     )
 
 
+class Reliability(BaseModel):
+    availability_pct: float = Field(default=99.5, gt=0, le=100, description="Disponibilité annoncée")
+    mean_outage_min: float = Field(default=60, gt=0, description="Durée moyenne d'une panne (à calibrer)")
+    degraded_time_factor: float = Field(default=1.3, ge=1, description="Surcoût du mode dégradé (papier)")
+    reentry_after_outage: bool = Field(default=True, description="Resaisie dans le logiciel après la panne")
+    support_outage_factor: float = Field(default=0.5, gt=0, le=1, description="Durée des pannes avec support sur site")
+
+
 class SoftwareInterface(BaseModel):
     target_category: str
     standard: str
@@ -43,6 +51,7 @@ class SoftwareModel(BaseModel):
     max_concurrent_users: int | None = None
     availability: TimeWindow | None = None
     sso: bool | None = None
+    reliability: Reliability = Field(default_factory=Reliability)
 
     @classmethod
     def from_spec_sheet(cls, spec: SpecSheet) -> SoftwareModel:

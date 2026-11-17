@@ -1,0 +1,11 @@
+# Variante du scénario n° 2 : support de l'éditeur présent sur site la première semaine
+# (les pannes sont raccourcies de moitié).
+name: Panne précoce avec support sur site
+description: Même panne, support éditeur présent 5 jours.
+deployment_day: 0
+random_outages: false
+support_on_site_days: 5
+incidents:
+  - { day: 1, at: "09:00", duration_min: 120, label: panne précoce }
+human:
+  initial_trust: 0.5

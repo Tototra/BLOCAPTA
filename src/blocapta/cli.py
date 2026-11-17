@@ -37,6 +37,14 @@ def _llm(role: str, enabled: bool):
     return get_llm(role) if enabled else None
 
 
+def _scenario(path: Path | None):
+    if path is None:
+        return None
+    from .models.scenario import Scenario
+
+    return Scenario.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+
+
 # --------------------------------------------------------------- template
 @app.command()
 def template(
@@ -201,6 +209,7 @@ def simulate(
     replications: int = 20,
     seed: int = 42,
     workers: int = 1,
+    scenario: Path | None = typer.Option(None, help="Scénario de déploiement / facteur humain (YAML)"),
     output: Path | None = typer.Option(None, "-o", help="Résultats JSON"),
 ):
     """Simule l'hôpital sans et avec le logiciel et compare."""
@@ -213,7 +222,7 @@ def simulate(
     else:
         sw = SoftwareModel.model_validate(data)
     with console.status("Simulation en cours…"):
-        r = simulate_audit(h, sw, days, replications, seed, workers)
+        r = simulate_audit(h, sw, days, replications, seed, workers, scenario=_scenario(scenario))
     t = Table(title=f"{sw.name} @ {h.name} — {replications} × {days} jours")
     for col in ("Indicateur", "Actuel", "Avec logiciel", "Écart %"):
         t.add_column(col)
@@ -222,6 +231,14 @@ def simulate(
     console.print(t)
     for f in r.frictions:
         console.print(f"[bold]{f.severity}[/] {f.type} — {f.pathway}/{f.step} : {f.example} ({f.affected_share:.0%} des tâches)")
+    if r.human:
+        console.print(f"[bold]Facteur humain — scénario « {r.scenario} »[/] (pannes : {r.human.outages})")
+        for role, series in r.human.trust_by_day.items():
+            pts = " → ".join(f"{series[d]:.2f}" for d in range(0, len(series), 7))
+            usage = r.human.usage_rate_by_role.get(role)
+            console.print(f"  {role:22s} confiance par semaine : {pts}" + (f"  | usage {usage:.0f} %" if usage is not None else ""))
+        for name, series in r.human.special_agents.items():
+            console.print(f"  [cyan]{name}[/] : {series[0]:.2f} → {series[-1]:.2f}")
     if output:
         output.write_text(r.model_dump_json(indent=2), encoding="utf-8")
 
@@ -236,6 +253,7 @@ def audit(
     seed: int = 42,
     workers: int = 1,
     llm: bool = typer.Option(True, help="LLM pour l'extraction de fiche et la rédaction"),
+    scenario: Path | None = typer.Option(None, help="Scénario de déploiement / facteur humain (YAML)"),
     output: Path = typer.Option(Path("out/rapport_audit.md"), "-o"),
 ):
     """Audit complet : validation de la fiche, simulation, rapport (Markdown + HTML + JSON)."""
@@ -244,6 +262,7 @@ def audit(
         r = run_audit(
             hospital, spec, days=days, replications=replications, seed=seed, workers=workers,
             extraction_llm=_llm("extraction", llm), report_llm=_llm("report", llm),
+            scenario=_scenario(scenario),
         )
     output.write_text(r.markdown, encoding="utf-8")
     output.with_suffix(".html").write_text(r.html, encoding="utf-8")

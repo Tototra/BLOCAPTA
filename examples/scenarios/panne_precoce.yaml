@@ -1,0 +1,10 @@
+# Scénario fil rouge n° 2 : une panne arrive dès les premiers usages (mardi 9 h, 2 h).
+# La confiance remonte-t-elle, et en combien de temps ?
+name: Panne précoce sans support
+description: Panne de 2 h le 2e jour, aucun support sur site.
+deployment_day: 0
+random_outages: false
+incidents:
+  - { day: 1, at: "09:00", duration_min: 120, label: panne précoce }
+human:
+  initial_trust: 0.5

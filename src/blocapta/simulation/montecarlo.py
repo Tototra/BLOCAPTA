@@ -9,14 +9,21 @@ import numpy as np
 from scipy import stats
 
 from ..models.hospital import Hospital
-from ..models.results import FrictionSummary, KpiComparison, SimulationReport, Stat, StaticFinding
+from ..models.results import (
+    FrictionSummary,
+    HumanSummary,
+    KpiComparison,
+    SimulationReport,
+    Stat,
+    StaticFinding,
+)
 from ..models.software import SoftwareModel
 from .engine import ReplicationResult, Simulation, SimulationOptions, kpi_label, software_gaps, task_key
 
 
 def _one(args) -> ReplicationResult:
-    hospital, software, options, i = args
-    return Simulation(hospital, software, options, replication=i).run()
+    hospital, software, options, i, scenario = args
+    return Simulation(hospital, software, options, replication=i, scenario=scenario).run()
 
 
 def run_replications(
@@ -25,8 +32,9 @@ def run_replications(
     options: SimulationOptions,
     replications: int,
     workers: int = 1,
+    scenario=None,
 ) -> list[ReplicationResult]:
-    jobs = [(hospital, software, options, i) for i in range(replications)]
+    jobs = [(hospital, software, options, i, scenario) for i in range(replications)]
     if workers > 1:
         with ProcessPoolExecutor(max_workers=workers) as ex:
             return list(ex.map(_one, jobs))
@@ -68,7 +76,7 @@ def _severity(ftype: str, hours_per_day: float, share: float, items_per_day: flo
         or (ftype == "cardinalite" and share >= 0.3)
     ):
         return "critique"
-    if hours_per_day >= 0.25 or share >= 0.2 or items_per_day > 0 or ftype in {"couverture", "interoperabilite"}:
+    if hours_per_day >= 0.25 or share >= 0.2 or items_per_day > 0 or ftype in {"couverture", "interoperabilite", "panne"}:
         return "majeure"
     if share >= 0.02:
         return "mineure"
@@ -172,6 +180,52 @@ def static_analysis(hospital: Hospital, software: SoftwareModel) -> tuple[list[S
     return findings, unused
 
 
+def summarise_human(runs: list[ReplicationResult], scenario) -> HumanSummary | None:
+    hs = [r.human for r in runs if r.human]
+    if not hs:
+        return None
+    roles = sorted({role for h in hs for role in h["trust_by_day"]})
+    trust_by_day = {}
+    for role in roles:
+        series = [h["trust_by_day"].get(role, []) for h in hs]
+        n = min(len(x) for x in series) if series else 0
+        trust_by_day[role] = [round(float(np.mean([x[d] for x in series])), 4) for d in range(n)]
+    weeks = min(len(h["sw_minutes_by_week"]) for h in hs)
+    special = {}
+    for name in sorted({k for h in hs for k in h.get("special_agents", {})}):
+        series = [h["special_agents"][name] for h in hs if name in h.get("special_agents", {})]
+        n = min(len(x) for x in series)
+        special[name] = [round(float(np.mean([x[d] for x in series])), 4) for d in range(n)]
+    usage = {}
+    final = {}
+    for role in roles:
+        u = [r.kpis[f"taux_utilisation_outil.{role}"] for r in runs if f"taux_utilisation_outil.{role}" in r.kpis]
+        if u:
+            usage[role] = round(float(np.mean(u)), 2)
+        f = [r.kpis[f"confiance_moyenne.{role}"] for r in runs if f"confiance_moyenne.{role}" in r.kpis]
+        if f:
+            final[role] = round(float(np.mean(f)), 4)
+    cfg = scenario.human
+    return HumanSummary(
+        roles=roles,
+        trust_by_day=trust_by_day,
+        special_agents=special,
+        usage_rate_by_role=usage,
+        final_trust_by_role=final,
+        sw_minutes_by_week=[round(float(np.mean([h["sw_minutes_by_week"][w] for h in hs])), 3) for w in range(weeks)],
+        outages=round(float(np.mean([h["outages"] for h in hs])), 2),
+        outage_minutes=round(float(np.mean([h["outage_minutes"] for h in hs])), 1),
+        parameters={
+            "lambda (aversion à la perte)": cfg.loss_aversion,
+            "alpha (apprentissage) — à calibrer": cfg.alpha,
+            "kappa (influence des collègues) — à calibrer": cfg.kappa,
+            "confiance initiale — à calibrer": cfg.initial_trust,
+            "seuil de contournement — à calibrer": cfg.bypass_threshold,
+            "facteur du 1er usage — à calibrer": cfg.learning_initial_factor,
+        },
+    )
+
+
 def simulate_audit(
     hospital: Hospital,
     software: SoftwareModel,
@@ -179,10 +233,13 @@ def simulate_audit(
     replications: int = 20,
     seed: int = 42,
     workers: int = 1,
+    scenario=None,
 ) -> SimulationReport:
     options = SimulationOptions(days=days, seed=seed)
+    if scenario is not None and scenario.volume_factor != 1.0:
+        options = SimulationOptions(days=days, seed=seed, volume_factor=scenario.volume_factor)
     base = run_replications(hospital, None, options, replications, workers)
-    soft = run_replications(hospital, software, options, replications, workers)
+    soft = run_replications(hospital, software, options, replications, workers, scenario=scenario)
     findings, unused = static_analysis(hospital, software)
     return SimulationReport(
         hospital_id=hospital.id,
@@ -194,4 +251,6 @@ def simulate_audit(
         frictions=summarise_frictions(soft),
         static_findings=findings,
         unused_touchpoints=unused,
+        scenario=scenario.name if scenario is not None else None,
+        human=summarise_human(soft, scenario) if scenario is not None else None,
     )

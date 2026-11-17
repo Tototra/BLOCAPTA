@@ -1,0 +1,11 @@
+# Scénario fil rouge n° 3 : un chirurgien senior est réticent.
+# L'outil est-il adopté par le reste de l'équipe, ou la réticence se propage-t-elle ?
+name: Chirurgien senior réticent
+description: Un chirurgien orthopédiste senior, très influent, démarre avec une confiance de 0,1.
+deployment_day: 0
+random_outages: true
+human:
+  initial_trust: 0.5
+  kappa: 0.08
+  overrides:
+    - { pool: chir_orthopedie, index: 0, label: chirurgien senior réticent, initial_trust: 0.1, authority: 6, alpha: 0.02 }

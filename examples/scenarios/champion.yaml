@@ -1,0 +1,11 @@
+# Variante du scénario n° 3 : un « champion » enthousiaste compense-t-il le sceptique ?
+name: Sceptique et champion
+description: Le chirurgien réticent est contrebalancé par une IBODE référente très engagée.
+deployment_day: 0
+random_outages: true
+human:
+  initial_trust: 0.5
+  kappa: 0.08
+  overrides:
+    - { pool: chir_orthopedie, index: 0, label: chirurgien senior réticent, initial_trust: 0.1, authority: 6, alpha: 0.02 }
+    - { pool: ibode, index: 0, label: IBODE référente (champion), initial_trust: 0.95, authority: 6 }

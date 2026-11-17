@@ -13,6 +13,8 @@ FrictionType = Literal[
     "ressource",  # attente d'un poste informatique
     "disponibilite",  # logiciel indisponible à l'heure de la tâche
     "charge",  # dépassement du nombre d'utilisateurs simultanés
+    "panne",  # logiciel en panne : mode dégradé puis resaisie
+    "adoption",  # l'agent contourne l'outil faute de confiance
 ]
 Severity = Literal["critique", "majeure", "mineure", "info"]
 
@@ -68,6 +70,20 @@ class StaticFinding(BaseModel):
     detail: str
 
 
+class HumanSummary(BaseModel):
+    """Résultats du facteur humain (moyennes sur les réplications)."""
+
+    roles: list[str] = Field(default_factory=list)
+    trust_by_day: dict[str, list[float]] = Field(default_factory=dict, description="métier -> confiance moyenne par jour")
+    special_agents: dict[str, list[float]] = Field(default_factory=dict, description="sceptiques / champions : confiance par jour")
+    usage_rate_by_role: dict[str, float] = Field(default_factory=dict, description="% d'usages réels de l'outil")
+    final_trust_by_role: dict[str, float] = Field(default_factory=dict)
+    sw_minutes_by_week: list[float] = Field(default_factory=list, description="temps moyen d'une saisie outil par semaine")
+    outages: float = 0.0
+    outage_minutes: float = 0.0
+    parameters: dict[str, float | str] = Field(default_factory=dict)
+
+
 class SimulationReport(BaseModel):
     hospital_id: str
     software_name: str | None
@@ -78,3 +94,5 @@ class SimulationReport(BaseModel):
     frictions: list[FrictionSummary] = Field(default_factory=list)
     static_findings: list[StaticFinding] = Field(default_factory=list)
     unused_touchpoints: list[str] = Field(default_factory=list)
+    scenario: str | None = None
+    human: HumanSummary | None = None

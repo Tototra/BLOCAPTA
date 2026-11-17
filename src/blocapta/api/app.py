@@ -29,6 +29,7 @@ from ..configurator import (
     render_markdown,
 )
 from ..llm import get_llm
+from ..models.scenario import Scenario
 from ..models.software import SoftwareModel
 from ..models.spec_sheet import SpecSheet
 from ..pipeline import run_audit
@@ -202,6 +203,7 @@ class SimulationIn(BaseModel):
     hospital: dict
     software: SoftwareModel | None = None
     spec: SpecSheet | None = None
+    scenario: Scenario | None = None
     days: int = Field(20, ge=1, le=365)
     replications: int = Field(20, ge=1, le=500)
     seed: int = 42
@@ -213,7 +215,7 @@ def simulations(body: SimulationIn) -> dict:
     sw = body.software or (SoftwareModel.from_spec_sheet(body.spec) if body.spec else None)
     if sw is None:
         raise HTTPException(422, "Fournir `software` ou `spec`")
-    return simulate_audit(h, sw, body.days, body.replications, body.seed).model_dump()
+    return simulate_audit(h, sw, body.days, body.replications, body.seed, scenario=body.scenario).model_dump()
 
 
 class FidelityIn(BaseModel):
@@ -241,6 +243,7 @@ async def audits(
     replications: int = Form(20),
     seed: int = Form(42),
     use_llm_report: bool = Form(True),
+    scenario_json: str | None = Form(None, description="Scénario (JSON) optionnel"),
 ) -> dict:
     h = _hospital(_parse_config((await hospital_file.read()).decode("utf-8")))
     suffix = Path(spec_file.filename or "fiche.txt").suffix
@@ -251,6 +254,7 @@ async def audits(
             h, Path(tmp.name), days=days, replications=replications, seed=seed,
             extraction_llm=get_llm("extraction"),
             report_llm=get_llm("report") if use_llm_report else None,
+            scenario=Scenario.model_validate_json(scenario_json) if scenario_json else None,
         )
     except RuntimeError as e:
         raise HTTPException(422, str(e)) from e

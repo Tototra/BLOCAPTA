@@ -132,10 +132,13 @@ class Simulation:
         software: SoftwareModel | None = None,
         options: SimulationOptions | None = None,
         replication: int = 0,
+        scenario=None,
     ):
         self.h = hospital
         self.sw = software
         self.o = options or SimulationOptions()
+        if scenario is not None and scenario.volume_factor != 1.0:
+            self.o = SimulationOptions(**{**self.o.__dict__, "volume_factor": scenario.volume_factor})
         ss = np.random.SeedSequence([self.o.seed, replication])
         # flux aléatoires séparés → nombres aléatoires communs (CRN) entre scénarios
         a, d, k, r, c, h = ss.spawn(6)
@@ -182,7 +185,11 @@ class Simulation:
         self.room_exits = 0
         self.room_overflows = 0
         self.ubiquity_violations = 0
-        self.human = None  # branché par le module facteur humain
+        self.human = None
+        if scenario is not None and software is not None:
+            from .human import HumanLayer
+
+            self.human = HumanLayer(scenario, software)
 
     # ------------------------------------------------------------------ run
     def run(self) -> ReplicationResult:
@@ -613,6 +620,11 @@ class Simulation:
         use_sw = tp is not None and tp.replaces_current
         ws_pool = task.workstation
         entries = 1
+        hl = self.human
+        agent = None
+        outcome = 1.0
+        if use_sw and hl is not None and not hl.deployed(self.env.now):
+            use_sw = False  # l'outil n'est pas encore déployé
 
         if not use_sw:
             duration = current_time
@@ -625,11 +637,42 @@ class Simulation:
             )
             use_sw = False
         else:
+            if hl is not None and hl.cfg.enabled:
+                agent = hl.pick(task.role)
+            sw_estimate = tp.time_per_entry_min.mean_value() + n * tp.time_per_item_min.mean_value()
+            if agent is not None and hl.bypasses(agent):
+                duration = current_time
+                self._friction(
+                    "adoption", pw, step, task, time_lost=sw_estimate,
+                    detail=f"Confiance faible ({agent.trust:.2f}) : outil contourné, retranscription ultérieure",
+                )
+                hl.record_use(agent, used_tool=False, duration=duration)
+                agent = None
+                use_sw = False
+            elif hl is not None and hl.is_down(self.env.now):
+                rel = self.sw.reliability
+                reentry = sw_estimate if rel.reentry_after_outage else 0.0
+                duration = current_time * rel.degraded_time_factor + reentry
+                self._friction(
+                    "panne", pw, step, task, time_lost=duration - current_time,
+                    detail="Logiciel en panne : mode dégradé" + (" puis resaisie" if reentry else ""),
+                )
+                if agent is not None:
+                    hl.update(agent, 0.0)
+                    hl.record_use(agent, used_tool=True, duration=duration)
+                agent = None
+                use_sw = False
+        if use_sw:
             entries = math.ceil(n / tp.max_items_per_entry) if tp.max_items_per_entry else 1
             entry_times = [tp.time_per_entry_min.sample(rng) for _ in range(entries)]
             duration = sum(entry_times) + sum(tp.time_per_item_min.sample(rng) for _ in range(n))
+            if agent is not None:
+                factor = hl.learning_factor(agent)
+                if factor > 1.0001:
+                    duration *= factor
             if entries > 1:
                 risk = int(rng.binomial(entries - 1, tp.omission_risk_per_extra_entry))
+                outcome = min(outcome, hl.cfg.partial_success_outcome) if hl is not None else outcome
                 self._friction(
                     "cardinalite", pw, step, task, time_lost=sum(entry_times[1:]), items=risk,
                     detail=f"{n} éléments à documenter, {entries} saisies (max {tp.max_items_per_entry} par saisie)",
@@ -637,6 +680,7 @@ class Simulation:
             double, _ = self._gap(task.current_system)
             if double:
                 duration += current_time
+                outcome = min(outcome, hl.cfg.partial_success_outcome) if hl is not None else outcome
                 self._friction(
                     "interoperabilite", pw, step, task, time_lost=current_time,
                     detail=f"Aucun flux vers '{task.current_system}' : double saisie",
@@ -691,6 +735,9 @@ class Simulation:
 
         if use_sw:
             self.current_users -= 1
+            if agent is not None:
+                hl.update(agent, outcome)
+                hl.record_use(agent, used_tool=True, duration=duration)
         if ws_req is not None:
             self._release(ws_pool, ws_req, ws_since)
         if role_req is not None:

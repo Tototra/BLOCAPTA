@@ -1,0 +1,10 @@
+# Scénario fil rouge n° 1 : un nouvel outil est déployé un lundi à 8 h.
+# Effet sur les retards, le temps de saisie et la confiance pendant le premier mois.
+name: Déploiement un lundi à 8 h
+description: Déploiement sans support sur site, pannes aléatoires selon la disponibilité annoncée.
+deployment_day: 0
+deployment_time: "08:00"
+random_outages: true
+support_on_site_days: 0
+human:
+  initial_trust: 0.5
