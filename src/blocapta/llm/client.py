@@ -37,11 +37,19 @@ class LLMClient(Protocol):
 class OllamaClient:
     """Client minimal pour l'API /api/chat d'Ollama (sorties structurées via ``format``)."""
 
-    def __init__(self, model: str, settings: Settings | None = None, max_retries: int = 2):
+    def __init__(
+        self,
+        model: str,
+        settings: Settings | None = None,
+        max_retries: int = 2,
+        http_client: httpx.Client | None = None,
+    ):
         self.settings = settings or get_settings()
         self.model = model
         self.max_retries = max_retries
-        self._http = httpx.Client(base_url=self.settings.ollama_url, timeout=self.settings.ollama_timeout)
+        self._http = http_client or httpx.Client(
+            base_url=self.settings.ollama_url, timeout=self.settings.ollama_timeout
+        )
 
     def _chat(self, messages: list[dict], fmt: dict | None = None, temperature: float = 0.0) -> str:
         payload: dict = {
