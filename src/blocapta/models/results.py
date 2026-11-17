@@ -39,6 +39,8 @@ class FrictionSummary(BaseModel):
     affected_share: float = Field(description="Part des tâches concernées (0-1)")
     time_lost_hours_per_replication: float
     items_at_risk_per_replication: float
+    occurrences_per_day: float = 0.0
+    time_lost_hours_per_day: float = 0.0
     severity: Severity
     example: str
 

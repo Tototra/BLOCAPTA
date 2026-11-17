@@ -1,0 +1,99 @@
+# Rapport d'audit de compatibilité — {{ f.software.name or "logiciel" }}
+
+**Établissement :** {{ f.hospital.name }} ({{ f.hospital.archetype or "configuration spécifique" }})
+**Éditeur :** {{ f.software.vendor or "non renseigné" }} — version {{ f.software.version or "non renseignée" }}
+**Généré le :** {{ f.generated_at }} · rédaction : {{ n.generated_by }}
+
+## Verdict
+
+**Score de compatibilité : {{ f.score.score }}/100 — {{ f.score.level }}**
+
+{{ n.resume_executif }}
+
+{% if n.points_de_vigilance %}
+## Points de vigilance
+{% for p in n.points_de_vigilance %}
+### {{ loop.index }}. {{ p.titre }} — {{ p.gravite }}
+
+- **Constat :** {{ p.constat }}
+- **Impact :** {{ p.impact }}
+- **Recommandation :** {{ p.recommandation }}
+
+{% endfor %}
+{% endif %}
+
+{% if f.headline_kpis %}
+## Indicateurs clés (moyennes sur {{ f.simulation.replications }} réplications de {{ f.simulation.days }} jours)
+
+| Indicateur | Unité | Situation actuelle | Avec le logiciel | Écart |
+|---|---|---:|---:|---:|
+{% for k in f.headline_kpis -%}
+| {{ k.label }} | {{ k.unit }} | {{ k.baseline|num(2) }} | {{ k.software|num(2) }} | {% if k.delta_pct is not none %}{{ k.delta_pct|signed(1) }} %{% else %}{{ k.delta|signed(2) }}{% endif %} |
+{% endfor %}
+{% endif %}
+
+{% if f.simulation and f.simulation.frictions %}
+## Frictions détectées par la simulation
+
+| Gravité | Type | Parcours / étape | Rôle | Part des tâches | Occurrences / jour | Heures perdues / jour | Éléments à risque (sur la période) |
+|---|---|---|---|---:|---:|---:|---:|
+{% for x in f.simulation.frictions -%}
+| {{ x.severity }} | {{ x.type }} | {{ x.pathway }} / {{ x.step }} | {{ x.role }} | {{ (x.affected_share * 100)|num(1) }} % | {{ x.occurrences_per_day|num(1) }} | {{ x.time_lost_hours_per_day|num(2) }} | {{ x.items_at_risk_per_replication|num(1) }} |
+{% endfor %}
+{% endif %}
+
+{% if f.simulation and f.simulation.static_findings %}
+## Constats d'architecture
+{% for s in f.simulation.static_findings %}
+- **{{ s.severity }}** ({{ s.type }}) : {{ s.detail }}
+{% endfor %}
+{% endif %}
+
+## Conformité de la fiche technique
+
+Complétude : **{{ f.validation.completeness_score }} %** — {{ "admissible" if f.validation.admissible else "NON admissible" }}
+
+{% if f.validation.failed %}
+| Critère | Gravité | Libellé |
+|---|---|---|
+{% for c in f.validation.failed -%}
+| {{ c.id }} | {{ c.severity }} | {{ c.label }} |
+{% endfor %}
+{% else %}
+Tous les critères sont respectés.
+{% endif %}
+
+{% if n.questions_editeur %}
+## Questions à poser à l'éditeur
+{% for q in n.questions_editeur %}
+{{ loop.index }}. {{ q }}
+{% endfor %}
+{% endif %}
+
+{% if n.conditions_deploiement %}
+## Conditions de déploiement recommandées
+{% for c in n.conditions_deploiement %}
+- {{ c }}
+{% endfor %}
+{% endif %}
+
+## Détail du score
+
+| Motif | Points |
+|---|---:|
+{% for l in f.score.lines -%}
+| {{ l.reason }} | {{ l.points }} |
+{% endfor %}
+
+{% if f.simulation %}
+## Annexe — tous les indicateurs
+
+| Indicateur | Unité | Actuel (IC 95 %) | Avec logiciel (IC 95 %) |
+|---|---|---|---|
+{% for k in f.simulation.kpis -%}
+| {{ k.label }} | {{ k.unit }} | {{ k.baseline.mean|num(2) }} [{{ k.baseline.ci_low|num(2) }} ; {{ k.baseline.ci_high|num(2) }}] | {{ k.software.mean|num(2) }} [{{ k.software.ci_low|num(2) }} ; {{ k.software.ci_high|num(2) }}] |
+{% endfor %}
+{% endif %}
+
+---
+*Méthode : simulation à événements discrets du fonctionnement de l'établissement (situation actuelle vs avec le logiciel), mêmes arrivées de patients dans les deux scénarios, graine {{ f.simulation.seed if f.simulation else "-" }}. Les chiffres du texte sont vérifiés automatiquement contre les résultats de simulation{% if n.unverified_numbers %} — chiffres non vérifiés détectés et écartés : {{ n.unverified_numbers|join(", ") }}{% endif %}. Les résultats dépendent de la qualité des données de paramétrage de l'établissement.*

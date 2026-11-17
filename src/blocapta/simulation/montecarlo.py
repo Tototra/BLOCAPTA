@@ -61,7 +61,12 @@ def compare(base: list[ReplicationResult], soft: list[ReplicationResult]) -> lis
 
 
 def _severity(ftype: str, hours_per_day: float, share: float, items_per_day: float) -> str:
-    if hours_per_day >= 1 or items_per_day >= 1 or (ftype == "interoperabilite" and share >= 0.5):
+    if (
+        hours_per_day >= 1
+        or items_per_day >= 1
+        or (ftype == "interoperabilite" and share >= 0.5)
+        or (ftype == "cardinalite" and share >= 0.3)
+    ):
         return "critique"
     if hours_per_day >= 0.25 or share >= 0.2 or items_per_day > 0 or ftype in {"couverture", "interoperabilite"}:
         return "majeure"
@@ -98,6 +103,8 @@ def summarise_frictions(runs: list[ReplicationResult]) -> list[FrictionSummary]:
                 affected_share=round(share, 4),
                 time_lost_hours_per_replication=round(hours, 2),
                 items_at_risk_per_replication=round(items, 2),
+                occurrences_per_day=round(occ / days, 2),
+                time_lost_hours_per_day=round(hours / days, 3),
                 severity=_severity(ftype, hours / days, share, risk_items / days),
                 example=evs[0].detail,
             )
