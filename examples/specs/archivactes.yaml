@@ -1,0 +1,36 @@
+# Fiche technique fictive, au format structuré BLOCAPTA.
+# Reproduit le cas réel : un outil de traçabilité qui n'accepte qu'UN acte par saisie.
+produit:
+  nom: ArchivActes
+  editeur: MedTrace SAS (fictif)
+  version: "2.3"
+  description: Archivage et traçabilité des actes opératoires au bloc.
+  categorie: tracabilite_bloc
+reglementaire:
+  hebergement_hds: true
+  conformite_rgpd: true
+  aipd_realisee: false
+  dispositif_medical: false
+  ins_compatible: true
+  pro_sante_connect: false
+interoperabilite:
+  standards: [HL7v2]
+  connecteurs:
+    - { cible: PMSI, standard: HL7v2, sens: sortant, message: "Envoi des actes codés" }
+technique:
+  sso: true
+  mode_degrade: false
+  hebergement: cloud_hds
+  utilisateurs_simultanes_max: 6
+  type_poste: fixe
+  disponibilite_horaire: "07:00-20:00"
+metier:
+  roles_cibles: [chirurgien]
+  points_de_contact:
+    - tache: tracabilite_actes
+      remplace_systeme_existant: true
+      roles: [chirurgien]
+      elements_max_par_saisie: 1
+      duree_saisie_sec: 75
+      duree_par_element_sec: 30
+      poste_requis: fixe

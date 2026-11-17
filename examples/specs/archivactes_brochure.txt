@@ -1,0 +1,12 @@
+ArchivActes v2.3 — MedTrace SAS (exemple fictif)
+
+ArchivActes simplifie la traçabilité des actes opératoires. À la fin de l'intervention, le chirurgien
+ouvre la fiche patient sur le poste de la salle, sélectionne l'acte réalisé dans la nomenclature CCAM
+et valide. L'enregistrement d'un acte prend en moyenne 1 minute 15, plus environ 30 secondes pour
+renseigner les détails de l'acte. Un seul acte est enregistré par fiche.
+
+Hébergement : cloud certifié HDS. Conformité RGPD. Identité INS prise en charge.
+Connexion via l'annuaire de l'établissement (SSO).
+Les actes validés sont transmis au logiciel PMSI via un flux HL7 v2.
+La solution fonctionne sur les postes fixes du bloc. Support et service disponibles de 7h00 à 20h00.
+Jusqu'à 6 utilisateurs connectés simultanément dans l'offre standard.
