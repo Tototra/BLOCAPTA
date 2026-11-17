@@ -28,6 +28,8 @@ DAY = 1440
 WEEK = 7 * DAY
 DRAIN_DAYS = 2  # jours supplémentaires pour terminer les patients en cours
 
+WEEKDAY_LABELS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+
 KPI_DEFS: dict[str, tuple[str, str]] = {
     "patients_termines": ("Patients pris en charge (parcours terminés)", "patients"),
     "duree_parcours_moy_min": ("Durée moyenne de parcours", "min"),
@@ -40,12 +42,26 @@ KPI_DEFS: dict[str, tuple[str, str]] = {
     "elements_a_risque": ("Éléments potentiellement non documentés", "éléments"),
     "pic_utilisateurs_simultanes": ("Pic d'utilisateurs simultanés du logiciel", "utilisateurs"),
     "jours_actifs": ("Jours d'activité simulés", "jours"),
+    "cas_programmes": ("Cas programmés", "cas"),
+    "cas_annules": ("Cas annulés avant le bloc", "cas"),
+    "cas_deprogrammes": ("Cas déprogrammés le jour même (règle de fin)", "cas"),
+    "taux_annulation_pct": ("Taux d'annulation", "%"),
+    "heure_premier_cas_min": ("Heure médiane d'entrée du premier cas (minutes depuis minuit)", "min"),
+    "occupation_salles_pct": ("Taux d'occupation des salles (temps patient / temps d'ouverture)", "%"),
+    "taux_debordement_pct": ("Cas programmés sortant de salle après la fermeture", "%"),
+    "occupation_capacite_pct": ("Occupation rapportée à la capacité totale (toutes salles × vacation)", "%"),
+    "controle_ubiquite": ("Contrôle d'ubiquité (doit rester à 0)", "violations"),
+    "durees_negatives": ("Durées négatives tirées (doit rester à 0)", "cas"),
 }
 KPI_PREFIX_DEFS: dict[str, tuple[str, str]] = {
     "temps_documentation_h.": ("Temps de documentation – {}", "h"),
     "utilisation.": ("Taux d'occupation – {}", "%"),
     "duree_parcours_moy_min.": ("Durée moyenne de parcours – {}", "min"),
     "patients_par_jour.": ("Patients par jour actif – {}", "patients/j"),
+    "interventions_par_jour.": ("Interventions réalisées par {}", "cas/j"),
+    "duree_mediane_cas_min.": ("Durée médiane d'occupation de salle – {}", "min"),
+    "confiance_moyenne.": ("Confiance moyenne dans l'outil – {}", "0-1"),
+    "taux_utilisation_outil.": ("Taux d'utilisation effective de l'outil – {}", "%"),
 }
 
 
@@ -65,6 +81,7 @@ class SimulationOptions:
     walk_to_fixed_workstation_min: float = 4.0
     overload_slowdown: float = 1.5
     workstation_wait_threshold_min: float = 2.0
+    volume_factor: float = 1.0  # ex. 0.55 pour simuler le mois d'août
 
 
 @dataclass
@@ -72,6 +89,7 @@ class ReplicationResult:
     kpis: dict[str, float]
     frictions: list[FrictionEvent]
     task_counts: dict[str, int] = field(default_factory=dict)
+    human: dict | None = None
 
 
 def task_key(pathway: str, step: str, role: str, kind: str) -> str:
@@ -119,16 +137,22 @@ class Simulation:
         self.sw = software
         self.o = options or SimulationOptions()
         ss = np.random.SeedSequence([self.o.seed, replication])
-        a, d, k = ss.spawn(3)  # flux aléatoires séparés → nombres aléatoires communs entre scénarios
+        # flux aléatoires séparés → nombres aléatoires communs (CRN) entre scénarios
+        a, d, k, r, c, h = ss.spawn(6)
         self.rng_arr = np.random.default_rng(a)
         self.rng_dur = np.random.default_rng(d)
         self.rng_doc = np.random.default_rng(k)
+        self.rng_res = np.random.default_rng(r)  # ouverture des salles, équipements optionnels
+        self.rng_canc = np.random.default_rng(c)
+        self.rng_human = np.random.default_rng(h)
         self.env = simpy.Environment()
         self.horizon = self.o.days * DAY
         self.run_until = self.horizon + DRAIN_DAYS * DAY
         self.pools = {
             n: simpy.PriorityResource(self.env, capacity=p.count) for n, p in hospital.resources.items() if p.count > 0
         }
+        self.available_minutes: dict[str, float] = {}
+        self._release_events = {n: self.env.event() for n in self.pools}
         self.touchpoints = {tp.task_kind: tp for tp in software.touchpoints} if software else {}
         self._gaps: dict[str, tuple[bool, list[str]]] = {}
         # mesures
@@ -136,6 +160,7 @@ class Simulation:
         self.frictions: list[FrictionEvent] = []
         self.task_counts: dict[str, int] = defaultdict(int)
         self.lead_times: dict[str, list[float]] = defaultdict(list)
+        self.case_durations: dict[str, list[float]] = defaultdict(list)
         self.step_waits: list[float] = []
         self.ws_waits: list[float] = []
         self.doc_times: dict[str, float] = defaultdict(float)
@@ -146,34 +171,128 @@ class Simulation:
         self.peak_users = 0
         self.service_day_end: dict[tuple[str, int], float] = {}
         self.active_days: set[int] = set()
+        self.scheduled = 0
+        self.cancelled = 0
+        self.completed_by_weekday: dict[int, int] = defaultdict(int)
+        self.first_start_by_day: dict[int, float] = {}
+        self.negative_durations = 0
+        self.room_patient_minutes = 0.0
+        self.room_minutes_weekdays = 0.0
+        self.deprogrammed = 0
+        self.room_exits = 0
+        self.room_overflows = 0
+        self.ubiquity_violations = 0
+        self.human = None  # branché par le module facteur humain
 
     # ------------------------------------------------------------------ run
     def run(self) -> ReplicationResult:
-        for name, pool in self.h.resources.items():
-            if pool.shift and pool.count > 0:
-                self.env.process(self._shift_blocker(name, pool.count, pool.shift))
+        ordered = sorted(self.h.resources.items(), key=lambda kv: any(s.follows for s in kv[1].shifts))
+        for name, pool in ordered:
+            if pool.count <= 0:
+                continue
+            timeline, available = self._availability_timeline(pool)
+            self.available_minutes[name] = available
+            if timeline:
+                self.env.process(self._availability_blocker(name, timeline))
         for pw in self.h.pathways:
-            self.env.process(self._arrivals(pw))
+            if pw.arrivals.mode == "poisson":
+                self.env.process(self._arrivals(pw))
+        if self.h.programme is not None:
+            self.env.process(self._planned_arrivals())
+        if self.human is not None:
+            self.human.start(self)
         self.env.run(until=self.run_until)
-        return ReplicationResult(kpis=self._kpis(), frictions=self.frictions, task_counts=dict(self.task_counts))
+        result = ReplicationResult(kpis=self._kpis(), frictions=self.frictions, task_counts=dict(self.task_counts))
+        if self.human is not None:
+            result.human = self.human.summary()
+            result.kpis.update(self.human.kpis())
+        return result
 
-    # -------------------------------------------------------- shift blocker
-    def _shift_blocker(self, name: str, count: int, shift: TimeWindow):
-        """Hors horaires, des « jetons » prioritaires occupent toutes les unités du pool.
+    # ------------------------------------------------- disponibilité des ressources
+    def _availability_timeline(self, pool, resolution: int = 5) -> tuple[list[tuple[float, int]], float]:
+        """Nombre d'unités INDISPONIBLES au cours du temps (équipes, ouverture des salles).
+
+        Renvoie les changements (t, n) et le total de minutes-unités disponibles.
+        """
+        groups = pool.shift_groups()
+        always = len(groups) == 1 and groups[0][0] is None and groups[0][2] is None
+        if always:
+            return [], float(pool.count * self.run_until)
+        n_days = int(self.run_until // DAY) + 1
+        opened = []  # opened[day][group]
+        self._opened = getattr(self, "_opened", {})
+        for _day in range(n_days):
+            row = []
+            for _, cnt, p in groups:
+                row.append(int(self.rng_res.binomial(cnt, p)) if p is not None else cnt)
+            opened.append(row)
+        self._opened[id(pool)] = (groups, opened)
+        followers = pool.followers()
+        changes: list[tuple[float, int]] = []
+        last = None
+        available_total = 0.0
+        t = 0
+        while t < self.run_until:
+            day = int(t // DAY)
+            minute_of_week = t % WEEK
+            avail = 0
+            for gi, (window, cnt, _) in enumerate(groups):
+                if window is None or window.contains(minute_of_week):
+                    start_day = day
+                    if window is not None and window.end_min <= window.start_min and (t % DAY) < window.end_min:
+                        start_day = max(0, day - 1)  # plage de nuit commencée la veille
+                    follower = followers.get(gi)
+                    if follower is not None:
+                        units = self._open_units(follower.follows, t)
+                        avail += min(cnt, int(round(follower.per_unit * units)) + follower.extra)
+                    else:
+                        avail += opened[start_day][gi]
+            avail = min(avail, pool.count)
+            available_total += avail * resolution
+            unavailable = pool.count - avail
+            if unavailable != last:
+                changes.append((float(t), unavailable))
+                last = unavailable
+            t += resolution
+        return changes, available_total
+
+    def _open_units(self, pool_name: str, t: float) -> int:
+        """Unités ouvertes d'un pool à l'instant t (selon ses équipes et son tirage du jour)."""
+        pool = self.h.resources[pool_name]
+        entry = self._opened.get(id(pool))
+        if entry is None:
+            return pool.count
+        groups, opened = entry
+        day = int(t // DAY)
+        total = 0
+        for gi, (window, _, _) in enumerate(groups):
+            if window is None or window.contains(t % WEEK):
+                start_day = day
+                if window is not None and window.end_min <= window.start_min and (t % DAY) < window.end_min:
+                    start_day = max(0, day - 1)
+                total += opened[start_day][gi]
+        return min(total, pool.count)
+
+    def _availability_blocker(self, name: str, timeline: list[tuple[float, int]]):
+        """Des « jetons » prioritaires occupent les unités indisponibles.
 
         Une personne en cours de tâche termine d'abord (pas de préemption) : cela crée
         naturellement du dépassement horaire.
         """
         pool = self.pools[name]
-        for start, end in off_periods(shift, self.run_until):
-            if start > self.env.now:
-                yield self.env.timeout(start - self.env.now)
-            reqs = [pool.request(priority=-1) for _ in range(count)]
-            yield self.env.all_of(reqs)
-            if end > self.env.now:
-                yield self.env.timeout(end - self.env.now)
-            for r in reqs:
-                pool.release(r)
+        held: list = []
+        for t, n in timeline:
+            if t > self.env.now:
+                yield self.env.timeout(t - self.env.now)
+            while len(held) < n:
+                held.append(pool.request(priority=-1))
+            while len(held) > n:
+                req = held.pop()
+                if req.triggered:
+                    pool.release(req)
+                else:
+                    req.cancel()
+                self._notify(name)
 
     # ------------------------------------------------------------ arrivals
     def _arrival_times(self, pw) -> list[float]:
@@ -181,25 +300,23 @@ class Simulation:
         start, end = w.start_min, w.end_min
         if end <= start:
             end += DAY
+        if pw.arrivals.hourly_profile:
+            weights = np.array(
+                [pw.arrivals.hourly_profile[h % 24] if start <= h * 60 + 59 and h * 60 < end else 0.0 for h in range(48)]
+            )
+            if weights.sum() == 0:
+                weights = None
+        else:
+            weights = None
         times: list[float] = []
         for day in range(self.o.days):
             if (day % 7) not in w.weekdays:
                 continue
-            n = int(round(pw.arrivals.per_day.sample(self.rng_arr)))
-            if n <= 0:
-                continue
-            if pw.arrivals.hourly_profile:
-                weights = np.array(
-                    [
-                        pw.arrivals.hourly_profile[h % 24] if start <= h * 60 + 59 and h * 60 < end else 0.0
-                        for h in range(48)
-                    ]
-                )
-                if weights.sum() == 0:
-                    weights = None
-            else:
-                weights = None
-            for _ in range(n):
+            lam = pw.arrivals.per_day.sample(self.rng_arr)
+            factor = pw.arrivals.weekday_factors[day % 7] if pw.arrivals.weekday_factors else 1.0
+            mean = lam * factor * self.o.volume_factor
+            n = int(self.rng_arr.poisson(mean)) if pw.arrivals.weekday_factors or self.o.volume_factor != 1 else int(round(mean))
+            for _ in range(max(0, n)):
                 if weights is not None:
                     h = int(self.rng_arr.choice(48, p=weights / weights.sum()))
                     m = float(np.clip(h * 60 + self.rng_arr.uniform(0, 60), start, end - 1e-6))
@@ -207,6 +324,53 @@ class Simulation:
                     m = float(self.rng_arr.uniform(start, end))
                 times.append(day * DAY + m)
         return sorted(times)
+
+    def _plan(self) -> list[tuple[float, object, float, float]]:
+        """Construit le programme opératoire : (arrivée, parcours, durée du cas, heure prévue d'entrée)."""
+        prog = self.h.programme
+        pool = self.h.resources[prog.room_pool]
+        groups, opened = self._opened.get(id(pool), (pool.shift_groups(), None))
+        by_id = {p.id: p for p in self.h.pathways}
+        ids = list(prog.specialty_weights)
+        weights = np.array([prog.specialty_weights[i] for i in ids], dtype=float)
+        weights /= weights.sum()
+        start, end = hhmm_to_minutes(prog.start), hhmm_to_minutes(prog.end)
+        planned = []
+        for day in range(self.o.days):
+            wd = day % 7
+            if wd not in prog.weekdays:
+                continue
+            t_start = wd * DAY + start
+            if opened is not None:
+                n_rooms = sum(
+                    opened[day][gi]
+                    for gi, (window, _, _) in enumerate(groups)
+                    if window is None or window.contains(t_start)
+                )
+            else:
+                n_rooms = pool.count
+            n_rooms = int(round(n_rooms * self.o.volume_factor))
+            limit = start + prog.fill_ratio * (end - start)
+            for _room in range(n_rooms):
+                pw = by_id[ids[int(self.rng_arr.choice(len(ids), p=weights))]]
+                cursor = float(start)
+                first = True
+                while True:
+                    # un cas est programmé s'il COMMENCE dans la vacation : pas de biais vers les cas courts
+                    dur = max(1.0, pw.case_duration_min.sample(self.rng_arr))
+                    if not first and cursor > limit:
+                        break
+                    planned.append((day * DAY + cursor - prog.call_ahead_min, pw, dur, day * DAY + cursor))
+                    cursor += dur + prog.turnover_min
+                    first = False
+        return sorted(planned, key=lambda x: x[0])
+
+    def _planned_arrivals(self):
+        for i, (t, pw, dur, planned_start) in enumerate(self._plan()):
+            if t > self.env.now:
+                yield self.env.timeout(t - self.env.now)
+            self.active_days.add(int(t // DAY))
+            self.env.process(self._patient(pw, i, planned=(dur, planned_start)))
 
     def _arrivals(self, pw):
         for i, t in enumerate(self._arrival_times(pw)):
@@ -216,40 +380,194 @@ class Simulation:
             self.env.process(self._patient(pw, i))
 
     # ------------------------------------------------------------- patient
-    def _acquire(self, name: str):
-        req = self.pools[name].request(priority=1)
+    def _acquire(self, name: str, priority: int = 1):
+        pool = self.pools[name]
+        req = pool.request(priority=priority)
         yield req
+        if len(pool.users) > pool.capacity:  # garde-fou : une unité à deux endroits
+            self.ubiquity_violations += 1
         return req
 
     def _release(self, name: str, req, since: float):
         self.pools[name].release(req)
         self.busy[name] += self.env.now - since
+        self._notify(name)
 
-    def _patient(self, pw, pid: int):
+    def _notify(self, name: str):
+        ev = self._release_events[name]
+        self._release_events[name] = self.env.event()
+        if not ev.triggered:
+            ev.succeed()
+
+    def _free(self, name: str) -> int:
+        pool = self.pools[name]
+        return pool.capacity - len(pool.users) - len(pool.queue)
+
+    def _acquire_all(self, needed: dict[str, int], priority: int = 1, deadline: float | None = None):
+        """Acquisition atomique : on ne prend rien tant que tout n'est pas disponible.
+
+        Évite les interblocages (attente circulaire) entre étapes qui partagent des ressources.
+        Avec ``deadline``, renvoie None si les ressources ne sont pas obtenues à temps.
+        """
+        needed = {n: q for n, q in needed.items() if q > 0}
+        if not needed:
+            return []
+        while True:
+            if deadline is not None and self.env.now > deadline:
+                return None
+            if all(self._free(n) >= q for n, q in needed.items()):
+                reqs = [(n, self.pools[n].request(priority=priority)) for n, q in needed.items() for _ in range(q)]
+                yield self.env.all_of([r for _, r in reqs])
+                for n in needed:
+                    if len(self.pools[n].users) > self.pools[n].capacity:
+                        self.ubiquity_violations += 1
+                return [(n, r, self.env.now) for n, r in reqs]
+            events = [self._release_events[n] for n in needed]
+            if deadline is not None:
+                events.append(self.env.timeout(max(0.0, deadline - self.env.now) + 1e-6))
+            yield self.env.any_of(events)
+
+    def _sample_duration(self, dist, rng) -> float:
+        v = dist.sample(rng)
+        if v < 0:
+            self.negative_durations += 1
+            v = 0.0
+        return v
+
+    def _patient(self, pw, pid: int, planned: tuple[float, float] | None = None):
+        self.scheduled += 1
+        if pw.arrivals.cancellation_rate and self.rng_canc.random() < pw.arrivals.cancellation_rate:
+            self.cancelled += 1
+            return
         t0 = self.env.now
+        priority = 0 if pw.urgent else 1
+        if planned is not None:
+            case_total, not_before_abs = planned
+        else:
+            not_before_abs = None
+            case_total = self._sample_duration(pw.case_duration_min, self.rng_dur) if pw.case_duration_min else None
+        if case_total is not None:
+            self.case_durations[pw.id].append(case_total)
+        carried: dict[str, list[tuple[object, float]]] = defaultdict(list)
         for step in pw.steps:
+            dur = (
+                self._sample_duration(step.duration_min, self.rng_dur)
+                if step.duration_min is not None
+                else case_total * step.duration_share
+            )
+            needed = dict(step.resources)
+            for rname, prob in step.optional_resources.items():
+                if self.rng_res.random() < prob:
+                    needed[rname] = needed.get(rname, 0) + 1
+
+            if step.detached:
+                given = {r: carried.pop(r) for r in list(carried) if r in needed}
+                if any(self._is_room(r) for r in given):
+                    self._room_exit(pw)
+                self.env.process(self._detached(pw, step, needed, given, dur, priority))
+                continue
+
             tw = self.env.now
+            entering_room = step.duration_share and not any(self._is_room(r) for r in carried)
+            if entering_room and (pw.room_not_before or not_before_abs is not None):
+                opening = not_before_abs if not_before_abs is not None else (
+                    (self.env.now // DAY) * DAY + hhmm_to_minutes(pw.room_not_before)
+                )
+                if self.env.now < opening:
+                    yield self.env.timeout(opening - self.env.now)
+                tw = self.env.now
             held: list[tuple[str, object, float]] = []
-            for rname in sorted(step.resources):
-                for _ in range(step.resources[rname]):
-                    req = yield from self._acquire(rname)
-                    held.append((rname, req, self.env.now))
+            missing: dict[str, int] = {}
+            for rname in sorted(needed):
+                have = carried.get(rname, [])
+                for _ in range(needed[rname]):
+                    if have:
+                        req, since = have.pop(0)
+                        held.append((rname, req, since))
+                    else:
+                        missing[rname] = missing.get(rname, 0) + 1
+            deadline = None
+            if pw.room_last_start and step.duration_share and not any(self._is_room(r) for r in carried):
+                deadline = (self.env.now // DAY) * DAY + hhmm_to_minutes(pw.room_last_start)
+            got = yield from self._acquire_all(missing, priority, deadline)
+            if got is None:  # règle de fin : le cas programmé est déprogrammé
+                for rname, req, since in held:
+                    self._release(rname, req, since)
+                for rname, lst in carried.items():
+                    for req, since in lst:
+                        self._release(rname, req, since)
+                self.deprogrammed += 1
+                return
+            held += got
+            for rname, lst in carried.items():  # ressources reçues mais non demandées : libérées
+                for req, since in lst:
+                    self._release(rname, req, since)
+            carried = defaultdict(list)
             self.step_waits.append(self.env.now - tw)
-            yield self.env.timeout(step.duration_min.sample(self.rng_dur))
+            in_room = any(self._is_room(r) for r, _, _ in held)
+            if in_room and step.duration_share and not pw.urgent:
+                day = int(self.env.now // DAY)
+                self.first_start_by_day.setdefault(day, self.env.now)
+            yield self.env.timeout(dur)
+            if in_room:
+                self.room_patient_minutes += dur
+                if int(self.env.now // DAY) % 7 < 5:
+                    self.room_minutes_weekdays += dur
 
             doc_roles = {d.role for d in step.documentation}
             kept: dict[str, tuple[object, float]] = {}
             for rname, req, since in held:
-                if rname in doc_roles and rname not in kept:
+                if rname in step.carry:
+                    carried[rname].append((req, since))
+                elif rname in doc_roles and rname not in kept:
                     kept[rname] = (req, since)  # le rôle documente avant d'être libéré
                 else:
                     self._release(rname, req, since)
+            if in_room and not any(self._is_room(r) for r in carried):
+                self._room_exit(pw)
             for task in step.documentation:
                 yield from self._document(pw, step, task, kept)
             for rname, (req, since) in kept.items():
                 self._release(rname, req, since)
             self._mark_service_end(pw.service)
+        for rname, lst in carried.items():
+            for req, since in lst:
+                self._release(rname, req, since)
         self.lead_times[pw.id].append(self.env.now - t0)
+        self.completed_by_weekday[int(t0 // DAY) % 7] += 1
+
+    def _detached(self, pw, step, needed, given, dur, priority):
+        held = []
+        missing: dict[str, int] = {}
+        for rname in sorted(needed):
+            have = given.get(rname, [])
+            for _ in range(needed[rname]):
+                if have:
+                    req, since = have.pop(0)
+                    held.append((rname, req, since))
+                else:
+                    missing[rname] = missing.get(rname, 0) + 1
+        held += yield from self._acquire_all(missing, priority)
+        for rname, lst in given.items():
+            for req, since in lst:
+                self._release(rname, req, since)
+        yield self.env.timeout(dur)
+        for rname, req, since in held:
+            self._release(rname, req, since)
+        self._mark_service_end(pw.service)
+
+    def _is_room(self, name: str) -> bool:
+        pool = self.h.resources.get(name)
+        return pool is not None and pool.kind == "salle" and pool.service is not None and name.startswith("salle")
+
+    def _room_exit(self, pw):
+        """Sortie de salle : sert au taux de débordement (cas programmés finissant après la fermeture)."""
+        if pw.urgent:
+            return
+        self.room_exits += 1
+        closing = self.h.services[pw.service].closing_time
+        if closing and (self.env.now % DAY) > hhmm_to_minutes(closing) and (int(self.env.now // DAY) % 7) < 5:
+            self.room_overflows += 1
 
     def _mark_service_end(self, service: str):
         day = int(self.env.now // DAY)
@@ -272,6 +590,13 @@ class Simulation:
             )
         )
 
+    def _role_supported(self, pool_name: str, roles: list[str]) -> bool:
+        pool = self.h.resources.get(pool_name)
+        names = {pool_name.lower()}
+        if pool is not None and pool.role:
+            names.add(pool.role.lower())
+        return bool(names & {r.lower() for r in roles})
+
     def _gap(self, system_id: str) -> tuple[bool, list[str]]:
         if system_id not in self._gaps:
             self._gaps[system_id] = software_gaps(self.h, self.sw, system_id)
@@ -279,8 +604,10 @@ class Simulation:
 
     def _document(self, pw, step, task, kept):
         rng = self.rng_doc
+        n = int(round(task.items.sample(rng)))
+        if n <= 0:
+            return  # rien à documenter pour ce cas
         self.task_counts[task_key(pw.id, step.id, task.role, task.kind)] += 1
-        n = max(1, int(round(task.items.sample(rng))))
         current_time = task.time_per_entry_min.sample(rng) + sum(task.time_per_item_min.sample(rng) for _ in range(n))
         tp = self.touchpoints.get(task.kind)
         use_sw = tp is not None and tp.replaces_current
@@ -289,7 +616,7 @@ class Simulation:
 
         if not use_sw:
             duration = current_time
-        elif tp.roles and task.role not in tp.roles:
+        elif tp.roles and not self._role_supported(task.role, tp.roles):
             duration = current_time
             sw_time = tp.time_per_entry_min.sample(rng) + n * tp.time_per_item_min.mean_value()
             self._friction(
@@ -404,11 +731,40 @@ class Simulation:
         for name, pool in self.h.resources.items():
             if pool.count <= 0:
                 continue
-            available = self.run_until
-            if pool.shift:
-                available -= sum(e - s for s, e in off_periods(pool.shift, self.run_until))
-            capacity = pool.count * max(available, 1)
-            k[f"utilisation.{name}"] = 100 * self.busy.get(name, 0.0) / capacity
+            available = self.available_minutes.get(name) or pool.count * self.run_until
+            k[f"utilisation.{name}"] = 100 * self.busy.get(name, 0.0) / max(available, 1)
+
+        # fidélité au bloc réel
+        k["cas_programmes"] = float(self.scheduled)
+        k["cas_annules"] = float(self.cancelled)
+        k["taux_annulation_pct"] = 100 * self.cancelled / self.scheduled if self.scheduled else 0.0
+        k["cas_deprogrammes"] = float(self.deprogrammed)
+        for wd, label in enumerate(WEEKDAY_LABELS):
+            n_wd = sum(1 for d in range(self.o.days) if d % 7 == wd)
+            if n_wd:
+                k[f"interventions_par_jour.{label}"] = self.completed_by_weekday.get(wd, 0) / n_wd
+        for pw in self.h.pathways:
+            durs = self.case_durations.get(pw.id)
+            if durs:
+                k[f"duree_mediane_cas_min.{pw.id}"] = float(np.median(durs))
+        firsts = [t % DAY for d, t in self.first_start_by_day.items() if d % 7 < 5]
+        if firsts:
+            k["heure_premier_cas_min"] = float(np.median(firsts))
+        rooms = [n for n in self.h.resources if self._is_room(n) and n in self.available_minutes]
+        avail_rooms = sum(self.available_minutes[n] for n in rooms)
+        if avail_rooms:
+            k["occupation_salles_pct"] = 100 * self.room_patient_minutes / avail_rooms
+        prog = self.h.programme
+        if prog is not None:
+            n_rooms = self.h.resources[prog.room_pool].count
+            n_wd = sum(1 for d in range(self.o.days) if d % 7 in prog.weekdays)
+            capacity = n_rooms * (hhmm_to_minutes(prog.end) - hhmm_to_minutes(prog.start)) * n_wd
+            if capacity:
+                k["occupation_capacite_pct"] = 100 * self.room_minutes_weekdays / capacity
+        if self.room_exits:
+            k["taux_debordement_pct"] = 100 * self.room_overflows / self.room_exits
+        k["controle_ubiquite"] = float(self.ubiquity_violations)
+        k["durees_negatives"] = float(self.negative_durations)
         return {key: round(v, 4) for key, v in k.items()}
 
 

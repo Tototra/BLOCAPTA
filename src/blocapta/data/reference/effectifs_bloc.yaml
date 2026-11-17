@@ -1,0 +1,163 @@
+# Effectifs, horaires et équipements du bloc de référence.
+# Source : document « Liste ressources humaines et horaires » (Drive BLOCAPTA).
+# Les EFFECTIFS TOTAUX et les PLAGES HORAIRES viennent du document.
+# La RÉPARTITION des effectifs entre les plages (présence simultanée) n'est pas connue :
+# elle est marquée « à calibrer » et doit être validée avec le cadre de bloc.
+
+weekdays: &semaine [0, 1, 2, 3, 4]
+all_days: &tous [0, 1, 2, 3, 4, 5, 6]
+weekend: &weekend [5, 6]
+
+staff:
+  mar:
+    label: Médecins anesthésistes-réanimateurs (une induction à la fois)
+    role: mar
+    total_team: 15
+    calibration: à calibrer (répartition par plage)
+    shifts:
+      # 1 MAR pour 2 salles ouvertes + 1 (SSPI, inductions) ; la nuit : 1 de garde
+      - { start: "08:00", end: "18:30", count: 7, weekdays: *semaine, follows: salle_op, per_unit: 0.5, extra: 1 }
+      - { start: "18:30", end: "20:00", count: 2, weekdays: *semaine }
+      - { start: "08:00", end: "20:00", count: 1, weekdays: *weekend }
+      - { start: "20:00", end: "08:00", count: 1, weekdays: *tous }
+  iade:
+    label: Infirmiers anesthésistes (IADE)
+    role: iade
+    total_team: 16
+    calibration: à calibrer (répartition par plage)
+    shifts:
+      # 1 IADE par salle ouverte + 1 (transferts) — checklist « 1:1 room staffing »
+      - { start: "08:00", end: "18:30", count: 11, weekdays: *semaine, follows: salle_op, per_unit: 1, extra: 1 }
+      - { start: "18:30", end: "20:00", count: 2, weekdays: *semaine }
+      - { start: "08:00", end: "20:00", count: 1, weekdays: *weekend }
+      - { start: "20:00", end: "08:00", count: 1, weekdays: *tous }
+  ibode:
+    label: Infirmiers de bloc opératoire (IBODE)
+    role: ibode
+    total_team: 12
+    calibration: à calibrer (répartition par plage)
+    shifts:
+      # 1 IBODE instrumentiste par salle ouverte
+      - { start: "08:00", end: "18:30", count: 10, weekdays: *semaine, follows: salle_op, per_unit: 1 }
+      - { start: "18:30", end: "20:00", count: 2, weekdays: *semaine }
+      - { start: "08:00", end: "20:00", count: 1, weekdays: *weekend }
+      - { start: "20:00", end: "08:00", count: 1, weekdays: *tous }
+  ide_bloc:
+    label: IDE panseurs (circulants)
+    role: ide_bloc
+    total_team: 6
+    calibration: à calibrer (répartition par plage)
+    shifts:
+      - { start: "08:00", end: "18:00", count: 3, weekdays: *semaine }
+      - { start: "08:00", end: "20:00", count: 1, weekdays: *semaine }
+      - { start: "20:00", end: "08:00", count: 1, weekdays: *tous }
+  ide_sspi:
+    label: IDE de SSPI
+    role: ide_sspi
+    total_team: 7
+    calibration: à calibrer (répartition par plage)
+    shifts:
+      - { start: "08:00", end: "15:30", count: 1, weekdays: *semaine }
+      - { start: "08:00", end: "18:00", count: 2, weekdays: *semaine }
+      - { start: "10:00", end: "20:00", count: 1, weekdays: *semaine }
+      - { start: "12:00", end: "00:00", count: 1, weekdays: *tous }
+      - { start: "08:00", end: "20:00", count: 1, weekdays: *weekend }
+  brancardier_service:
+    label: Brancardiers « montées-descentes » (service ↔ bloc)
+    role: brancardier
+    total_team: 3
+    shifts:
+      - { start: "07:30", end: "15:30", count: 1, weekdays: *semaine }
+      - { start: "09:00", end: "17:00", count: 1, weekdays: *semaine }
+      - { start: "11:00", end: "19:00", count: 1, weekdays: *semaine }
+      # hypothèse à calibrer : la nuit et le week-end, les transferts sont assurés par le brancardier de garde
+      - { start: "19:00", end: "07:30", count: 1, weekdays: *tous }
+      - { start: "07:30", end: "19:00", count: 1, weekdays: *weekend }
+  brancardier_bloc:
+    label: Brancardiers d'installation (salle, table, transfert SSPI)
+    role: brancardier
+    total_team: 10
+    calibration: à calibrer (répartition par plage)
+    shifts:
+      - { start: "07:30", end: "19:30", count: 4, weekdays: *semaine }
+      - { start: "08:00", end: "18:00", count: 3, weekdays: *semaine }
+      - { start: "07:30", end: "19:30", count: 1, weekdays: *weekend }
+      - { start: "19:00", end: "07:30", count: 1, weekdays: *tous }
+  ash:
+    label: Agents de bionettoyage (ASH)
+    role: ash
+    total_team: 5
+    calibration: à calibrer (répartition par plage)
+    shifts:
+      - { start: "07:30", end: "19:30", count: 2, weekdays: *semaine }
+      - { start: "09:00", end: "17:00", count: 2, weekdays: *semaine }
+      - { start: "10:00", end: "18:00", count: 1, weekdays: *semaine }
+      - { start: "07:30", end: "19:30", count: 1, weekdays: *weekend }
+      - { start: "19:30", end: "07:30", count: 1, weekdays: *tous }
+
+# Chirurgiens par spécialité (document : 34 chirurgiens, maternité exclue du bloc central).
+# Jour : effectif de la spécialité ; nuit et week-end : 1 chirurgien de garde par spécialité.
+surgeons:
+  chir_orthopedie: { label: Chirurgiens orthopédistes, team: 5 }
+  chir_visceral: { label: Chirurgiens viscéraux, team: 5 }
+  chir_orl: { label: Chirurgiens ORL et stomatologie, team: 3 }
+  endoscopiste: { label: Endoscopistes, team: 8 }
+  chir_gynecologie: { label: Gynécologues, team: 5 }
+  chir_ophtalmologie: { label: Ophtalmologues, team: 5 }
+  chir_urologie: { label: Urologues, team: 5 }
+  cardiologue: { label: Cardiologues interventionnels, team: 2, calibration: à calibrer (absent du document) }
+
+# Spécialités OPROOM -> pool de chirurgiens et équipements (probabilités à calibrer)
+specialties:
+  Chirurgie Orthopédique: { surgeon: chir_orthopedie, equipment: { amplificateur: 0.6 }, dm_items: { 0: 0.4, 1: 0.35, 2: 0.15, 3: 0.1 } }
+  Chirurgie Générale et Digestive: { surgeon: chir_visceral, equipment: { colonne_coelioscopie: 0.5 }, dm_items: { 0: 0.6, 1: 0.3, 2: 0.1 } }
+  VISCERAL ROBOT: { surgeon: chir_visceral, equipment: { robot: 1.0 }, dm_items: { 0: 0.5, 1: 0.4, 2: 0.1 } }
+  Chirurgie ORL: { surgeon: chir_orl, equipment: { microscope: 0.3 }, dm_items: { 0: 0.8, 1: 0.2 } }
+  Stomatologie: { surgeon: chir_orl, equipment: {}, dm_items: { 0: 0.8, 1: 0.2 } }
+  Endoscopie Digestive: { surgeon: endoscopiste, equipment: {}, dm_items: { 0: 0.9, 1: 0.1 } }
+  Gynécologie Obstétrique: { surgeon: chir_gynecologie, equipment: { colonne_coelioscopie: 0.4 }, dm_items: { 0: 0.8, 1: 0.2 } }
+  Ophtalmologie: { surgeon: chir_ophtalmologie, equipment: { microscope: 1.0 }, dm_items: { 0: 0.05, 1: 0.95 } }
+  Chirurgie Urologique: { surgeon: chir_urologie, equipment: { colonne_coelioscopie: 0.3, amplificateur: 0.2 }, dm_items: { 0: 0.6, 1: 0.3, 2: 0.1 } }
+  UROLOGIE ROBOT: { surgeon: chir_urologie, equipment: { robot: 1.0 }, dm_items: { 0: 0.5, 1: 0.4, 2: 0.1 } }
+  Cardiologie: { surgeon: cardiologue, equipment: { amplificateur: 1.0 }, dm_items: { 0: 0.3, 1: 0.7 } }
+
+# Équipements partagés (nombres issus du document)
+equipment:
+  amplificateur: { label: Amplificateurs de brillance, count: 3 }
+  colonne_coelioscopie: { label: Colonnes de coelioscopie / endoscopie, count: 3 }
+  robot: { label: Robot chirurgical, count: 1 }
+  microscope: { label: Microscopes opératoires, count: 2 }
+  echographe: { label: Échographes d'anesthésie (ALR), count: 3 }
+
+infrastructure:
+  rooms: 10                       # OP 2 à OP 11
+  room_hours: { start: "08:00", end: "18:30" }
+  programme_start: "08:30"        # à calibrer : ouverture et vérification de salle avant le 1er cas
+  last_programmed_start: "18:00"  # règle de fin : plus de cas programmé démarré après 18 h
+  programme_fill_ratio: 0.73      # calibré (test de fidélité GO) sur le volume réel : 32,4 cas par jour ouvré
+  call_ahead_min: 60              # à calibrer : appel du patient avant l'heure prévue
+  night_rooms: 1                  # salle disponible pour les urgences la nuit et le week-end (à calibrer)
+  sspi_beds: 13
+  sspi_patients_per_nurse: 4      # à calibrer (CSP D6124-101 : 2 agents dès 6 postes occupés)
+  preanesthesia_posts: 8          # à calibrer (non renseigné)
+  workstations_per_room: 1
+
+# Durées non mesurées dans OPROOM (toutes à calibrer)
+assumed_durations:
+  brancardage_min: { mean: 10, sd: 4 }
+  accueil_preanesthesie_min: { mean: 10, sd: 5 }
+  bionettoyage_min: { mean: 8, sd: 4 }
+  transfert_sspi_min: { mean: 5, sd: 2 }
+  sspi_by_anesthesia_min: { AG: 70, ALR: 45, AL_sedation: 25, AL: 12, inconnu: 50 }
+  ambulatory_sspi_factor: 0.8
+  # découpage de l'occupation de salle en phases (BlocSim : accueil 8 %, induction 12 %, installation 10 %, fermeture 10 %, réveil 8 %)
+  phase_shares: { installation: 0.10, induction: 0.12, intervention: 0.62, reveil: 0.16 }
+  patient_debout_share: { Ophtalmologie: 0.7, Endoscopie Digestive: 0.5 }
+
+documentation:
+  # nombre d'actes codés par intervention : non disponible dans OPROOM (à calibrer avec le DIM)
+  ccam_acts_per_case: { 1: 0.55, 2: 0.30, 3: 0.12, 4: 0.03 }
+  time_per_entry_min: { low: 0.5, mode: 1.0, high: 2.0 }
+  time_per_item_min: { low: 0.3, mode: 0.5, high: 1.0 }
+  dm_time_per_entry_min: { low: 0.3, mode: 0.5, high: 1.0 }
+  dm_time_per_item_min: { low: 1.0, mode: 2.0, high: 3.0 }   # traçabilité papier (template : 2 min par implant)

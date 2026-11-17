@@ -60,13 +60,69 @@ class TimeWindow(BaseModel):
 ResourceKind = Literal["humain", "salle", "poste", "equipement"]
 
 
+class ShiftCount(BaseModel):
+    """Une équipe sur une plage horaire : ``count`` personnes présentes de ``start`` à ``end``."""
+
+    start: str
+    end: str
+    count: int = Field(ge=0)
+    weekdays: list[int] = Field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6])
+    availability: float | None = Field(default=None, ge=0, le=1, description="Remplace daily_availability du pool")
+    follows: str | None = Field(
+        default=None, description="Effectif lié aux unités ouvertes d'un autre pool (ex. 1 IADE par salle ouverte)"
+    )
+    per_unit: float = Field(default=1.0, ge=0)
+    extra: int = Field(default=0, ge=0)
+
+    @property
+    def window(self) -> TimeWindow:
+        return TimeWindow(start=self.start, end=self.end, weekdays=self.weekdays)
+
+
 class ResourcePool(BaseModel):
     label: str | None = None
     kind: ResourceKind = "humain"
-    count: int = Field(ge=0)
+    role: str | None = Field(default=None, description="Métier générique (chirurgien, iade…) pour relier au logiciel")
+    count: int = Field(default=0, ge=0, description="Capacité maximale simultanée (calculée si `shifts`)")
     service: str | None = None
     shift: TimeWindow | None = Field(default=None, description="Horaires de disponibilité ; None = 24h/24")
+    shifts: list[ShiftCount] = Field(
+        default_factory=list, description="Plusieurs équipes avec leurs effectifs (remplace `shift`)"
+    )
+    daily_availability: float | None = Field(
+        default=None, ge=0, le=1,
+        description="Probabilité qu'une unité soit ouverte un jour donné (ex. ouverture des salles)",
+    )
     mobile: bool = Field(default=False, description="Pour les postes : poste mobile (tablette, chariot)")
+    calibration: str | None = Field(default=None, description="Origine de la valeur : mesuré, déclaré, à calibrer")
+
+    @model_validator(mode="after")
+    def _shift_capacity(self):
+        if self.shifts:
+            if self.shift is not None:
+                raise ValueError("utiliser `shift` OU `shifts`, pas les deux")
+            peak = 0
+            for t in range(0, 7 * 1440, 15):
+                peak = max(peak, sum(s.count for s in self.shifts if s.window.contains(t)))
+            if self.count < peak:
+                self.count = peak
+        return self
+
+    def followers(self) -> dict[int, ShiftCount]:
+        return {i: s for i, s in enumerate(self.shifts) if s.follows}
+
+    def shift_groups(self) -> list[tuple[TimeWindow | None, int, float | None]]:
+        """Liste (plage, effectif, probabilité d'ouverture) ; plage None = 24h/24."""
+        if self.shifts:
+            return [
+                (s.window, s.count, s.availability if s.availability is not None else self.daily_availability)
+                for s in self.shifts
+            ]
+        return [(self.shift, self.count, self.daily_availability)]
+
+    @property
+    def role_name(self) -> str | None:
+        return self.role
 
 
 class DocumentationTask(BaseModel):
@@ -86,19 +142,61 @@ class DocumentationTask(BaseModel):
 
 
 class Step(BaseModel):
+    """Étape d'un parcours.
+
+    - ``duration_min`` : durée propre ; ou ``duration_share`` : part de la durée du cas
+      (``Pathway.case_duration_min``, tirée une fois par patient) ;
+    - ``carry`` : ressources conservées pour l'étape suivante (ex. la salle jusqu'au bionettoyage) ;
+      à l'étape suivante, les ressources reçues et non demandées sont libérées dès que les
+      nouvelles sont obtenues (effet « tampon » de la pré-anesthésie) ;
+    - ``detached`` : l'étape se déroule en parallèle du reste du parcours (ex. bionettoyage
+      pendant le transfert en SSPI) avec les ressources reçues qu'elle demande ;
+    - ``optional_resources`` : ressources demandées avec une probabilité (équipements partagés).
+    """
+
     id: str
     label: str | None = None
-    duration_min: Distribution
+    duration_min: Distribution | None = None
+    duration_share: float | None = Field(default=None, gt=0, le=1)
     resources: dict[str, int] = Field(default_factory=dict, description="pool -> quantité requise")
+    optional_resources: dict[str, float] = Field(default_factory=dict, description="pool -> probabilité")
+    carry: list[str] = Field(default_factory=list)
+    detached: bool = False
     documentation: list[DocumentationTask] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _duration(self):
+        if (self.duration_min is None) == (self.duration_share is None):
+            raise ValueError(f"étape '{self.id}' : renseigner duration_min OU duration_share")
+        return self
 
 
 class Arrivals(BaseModel):
-    per_day: Distribution
+    mode: Literal["poisson", "planned"] = Field(
+        default="poisson", description="planned : cas générés par le programme opératoire (Hospital.programme)"
+    )
+    per_day: Distribution | None = None
     window: TimeWindow = Field(default_factory=lambda: TimeWindow(start="07:30", end="17:00", weekdays=[0, 1, 2, 3, 4]))
     hourly_profile: list[float] | None = Field(
         default=None, description="24 poids relatifs par heure ; None = répartition uniforme dans la plage"
     )
+    weekday_factors: list[float] | None = Field(
+        default=None, description="7 multiplicateurs du volume (lundi → dimanche)"
+    )
+    cancellation_rate: float = Field(default=0.0, ge=0, lt=1, description="Part des cas annulés avant le bloc")
+
+    @field_validator("weekday_factors")
+    @classmethod
+    def _factors(cls, v):
+        if v is not None and (len(v) != 7 or min(v) < 0):
+            raise ValueError("weekday_factors doit contenir 7 valeurs positives")
+        return v
+
+    @model_validator(mode="after")
+    def _per_day(self):
+        if self.mode == "poisson" and self.per_day is None:
+            raise ValueError("arrivées poisson : per_day est obligatoire")
+        return self
 
     @field_validator("hourly_profile")
     @classmethod
@@ -112,8 +210,41 @@ class Pathway(BaseModel):
     id: str
     label: str | None = None
     service: str
+    specialty: str | None = None
+    urgent: bool = Field(default=False, description="Les urgences passent avant le programmé")
     arrivals: Arrivals
+    case_duration_min: Distribution | None = Field(
+        default=None, description="Durée d'occupation de salle du cas, répartie entre les étapes via duration_share"
+    )
+    room_last_start: str | None = Field(
+        default=None, description="Heure après laquelle un cas programmé n'est plus démarré (déprogrammé)"
+    )
+    room_not_before: str | None = Field(
+        default=None, description="Heure avant laquelle un cas programmé n'entre pas en salle (ouverture des vacations)"
+    )
     steps: list[Step] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _shares(self):
+        if any(s.duration_share for s in self.steps) and self.case_duration_min is None:
+            raise ValueError(f"parcours '{self.id}' : duration_share exige case_duration_min")
+        return self
+
+
+class ProgrammeConfig(BaseModel):
+    """Programme opératoire : chaque jour, chaque salle ouverte reçoit une spécialité
+    et est remplie de cas jusqu'à la fin de vacation."""
+
+    room_pool: str = "salle_op"
+    weekdays: list[int] = Field(default_factory=lambda: [0, 1, 2, 3, 4])
+    start: str = "08:30"
+    end: str = "18:00"
+    fill_ratio: float = Field(default=0.8, gt=0, le=1.2, description="Part de la vacation remplie au programme")
+    turnover_min: float = Field(default=7, ge=0, description="Délai prévu entre deux cas (remise en état)")
+    call_ahead_min: float = Field(default=60, ge=0, description="Appel du patient avant l'heure prévue")
+    specialty_weights: dict[str, float] = Field(
+        description="parcours programmé -> part des salles-jours attribuées", min_length=1
+    )
 
 
 class Service(BaseModel):
@@ -158,15 +289,40 @@ class Hospital(BaseModel):
     resources: dict[str, ResourcePool] = Field(default_factory=dict)
     pathways: list[Pathway] = Field(default_factory=list)
     information_system: InformationSystem = Field(default_factory=InformationSystem)
+    programme: ProgrammeConfig | None = None
 
     @model_validator(mode="after")
     def _references(self):
         errors: list[str] = []
+        ids = {p.id for p in self.pathways}
+        if self.programme:
+            if self.programme.room_pool not in self.resources:
+                errors.append(f"programme : pool de salles inconnu '{self.programme.room_pool}'")
+            for pid in self.programme.specialty_weights:
+                if pid not in ids:
+                    errors.append(f"programme : parcours inconnu '{pid}'")
+        for name, pool in self.resources.items():
+            for sh in pool.shifts:
+                if sh.follows and sh.follows not in self.resources:
+                    errors.append(f"ressource '{name}' : pool suivi inconnu '{sh.follows}'")
+                elif sh.follows and self.resources[sh.follows].shifts and any(
+                    x.follows for x in self.resources[sh.follows].shifts
+                ):
+                    errors.append(f"ressource '{name}' : le pool suivi '{sh.follows}' ne peut pas lui-même en suivre un autre")
+        for p in self.pathways:
+            if p.arrivals.mode == "planned":
+                if not self.programme or p.id not in self.programme.specialty_weights:
+                    errors.append(f"parcours '{p.id}' : arrivées 'planned' sans entrée dans programme.specialty_weights")
+                if p.case_duration_min is None:
+                    errors.append(f"parcours '{p.id}' : arrivées 'planned' exigent case_duration_min")
         apps = self.information_system.applications
         for p in self.pathways:
             if p.service not in self.services:
                 errors.append(f"parcours '{p.id}' : service inconnu '{p.service}'")
             for s in p.steps:
+                for r in list(s.optional_resources) + s.carry:
+                    if r not in self.resources:
+                        errors.append(f"étape '{p.id}/{s.id}' : ressource inconnue '{r}'")
                 for r, q in s.resources.items():
                     if r not in self.resources:
                         errors.append(f"étape '{p.id}/{s.id}' : ressource inconnue '{r}'")

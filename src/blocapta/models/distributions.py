@@ -165,6 +165,34 @@ class Empirical(_Dist):
         return sum(k * p for k, p in self.values.items())
 
 
+class Quantiles(_Dist):
+    """Fonction de répartition inverse linéaire par morceaux : ``{probabilité: valeur}``.
+
+    Idéal pour reproduire des centiles observés (p05, p25, médiane, p75, p95…) sans
+    imposer une forme paramétrique.
+    """
+
+    dist: Literal["quantiles"] = "quantiles"
+    points: dict[float, float]
+
+    @field_validator("points")
+    @classmethod
+    def _check(cls, v: dict[float, float]) -> dict[float, float]:
+        pts = sorted((float(p), float(x)) for p, x in v.items())
+        if len(pts) < 2 or pts[0][0] != 0.0 or pts[-1][0] != 1.0:
+            raise ValueError("quantiles : il faut au moins les probabilités 0 et 1")
+        if any(b[1] < a[1] for a, b in zip(pts, pts[1:], strict=False)):
+            raise ValueError("quantiles : les valeurs doivent être croissantes")
+        return dict(pts)
+
+    def sample(self, rng):
+        return float(np.interp(rng.random(), list(self.points.keys()), list(self.points.values())))
+
+    def mean_value(self):
+        ps, xs = list(self.points.keys()), list(self.points.values())
+        return float(sum((ps[i + 1] - ps[i]) * (xs[i] + xs[i + 1]) / 2 for i in range(len(ps) - 1)))
+
+
 class Samples(_Dist):
     """Rééchantillonnage direct d'observations réelles (bootstrap)."""
 
@@ -179,6 +207,6 @@ class Samples(_Dist):
 
 
 Distribution = Annotated[
-    Fixed | Exponential | Normal | LogNormal | Gamma | Triangular | Uniform | Poisson | Empirical | Samples,
+    Fixed | Exponential | Normal | LogNormal | Gamma | Triangular | Uniform | Poisson | Empirical | Quantiles | Samples,
     Field(discriminator="dist"),
 ]

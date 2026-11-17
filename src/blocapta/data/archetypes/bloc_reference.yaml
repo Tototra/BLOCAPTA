@@ -1,0 +1,3691 @@
+# FICHIER GÉNÉRÉ par `blocapta reference build` à partir de data/reference/ (ne pas éditer à la main).
+# Hériter de cet archétype avec  extends: bloc_reference  pour décrire un autre bloc.
+id: bloc_reference
+name: Bloc opératoire central de référence (10 salles, données OPROOM 2026)
+archetype: bloc_reference
+metadata:
+  type: bloc opératoire
+  source: Export OPROOM agrégé (aucune donnée nominative)
+  periode: 2026-01-01 → 2026-10-31
+  parametres_a_calibrer: 'Effectifs par plage horaire : Médecins anesthésistes-réanimateurs (une induction à la
+    fois) | Effectifs par plage horaire : Infirmiers anesthésistes (IADE) | Effectifs par plage horaire : Infirmiers
+    de bloc opératoire (IBODE) | Effectifs par plage horaire : IDE panseurs (circulants) | Effectifs par plage horaire
+    : IDE de SSPI | Effectifs par plage horaire : Brancardiers d''installation (salle, table, transfert SSPI) |
+    Effectifs par plage horaire : Agents de bionettoyage (ASH) | Patients surveillés par IDE de SSPI : 4 | Effectif
+    : Cardiologues interventionnels | Postes de pré-anesthésie : 8 | Début des vacations programmées (ouverture
+    et vérification de salle) : 08:30 | Taux de remplissage du programme opératoire : 0.73 | Délai d''appel du patient
+    avant l''heure prévue : 60 min | Découpage de l''occupation de salle en phases (installation, induction, intervention,
+    réveil) | Durées de brancardage, d''accueil en pré-anesthésie, de bionettoyage et de transfert | Durées de SSPI
+    par type d''anesthésie | Probabilités d''usage des équipements partagés par spécialité | Nombre d''actes CCAM
+    et de dispositifs médicaux tracés par intervention | Part de patients venant à pied (debout) par spécialité'
+services:
+  bloc:
+    label: Bloc opératoire central
+    kind: bloc
+    closing_time: '18:30'
+resources:
+  mar:
+    label: Médecins anesthésistes-réanimateurs (une induction à la fois)
+    role: mar
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 7
+      weekdays: &id001
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      follows: salle_op
+      per_unit: 0.5
+      extra: 1
+    - start: '18:30'
+      end: '20:00'
+      count: 2
+      weekdays: *id001
+    - start: 08:00
+      end: '20:00'
+      count: 1
+      weekdays: &id002
+      - 5
+      - 6
+    - start: '20:00'
+      end: 08:00
+      count: 1
+      weekdays: &id003
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+    service: bloc
+    calibration: à calibrer (répartition par plage)
+  iade:
+    label: Infirmiers anesthésistes (IADE)
+    role: iade
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 11
+      weekdays: *id001
+      follows: salle_op
+      per_unit: 1
+      extra: 1
+    - start: '18:30'
+      end: '20:00'
+      count: 2
+      weekdays: *id001
+    - start: 08:00
+      end: '20:00'
+      count: 1
+      weekdays: *id002
+    - start: '20:00'
+      end: 08:00
+      count: 1
+      weekdays: *id003
+    service: bloc
+    calibration: à calibrer (répartition par plage)
+  ibode:
+    label: Infirmiers de bloc opératoire (IBODE)
+    role: ibode
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 10
+      weekdays: *id001
+      follows: salle_op
+      per_unit: 1
+    - start: '18:30'
+      end: '20:00'
+      count: 2
+      weekdays: *id001
+    - start: 08:00
+      end: '20:00'
+      count: 1
+      weekdays: *id002
+    - start: '20:00'
+      end: 08:00
+      count: 1
+      weekdays: *id003
+    service: bloc
+    calibration: à calibrer (répartition par plage)
+  ide_bloc:
+    label: IDE panseurs (circulants)
+    role: ide_bloc
+    shifts:
+    - start: 08:00
+      end: '18:00'
+      count: 3
+      weekdays: *id001
+    - start: 08:00
+      end: '20:00'
+      count: 1
+      weekdays: *id001
+    - start: '20:00'
+      end: 08:00
+      count: 1
+      weekdays: *id003
+    service: bloc
+    calibration: à calibrer (répartition par plage)
+  ide_sspi:
+    label: IDE de SSPI
+    role: ide_sspi
+    shifts:
+    - start: 08:00
+      end: '15:30'
+      count: 1
+      weekdays: *id001
+    - start: 08:00
+      end: '18:00'
+      count: 2
+      weekdays: *id001
+    - start: '10:00'
+      end: '20:00'
+      count: 1
+      weekdays: *id001
+    - start: '12:00'
+      end: 00:00
+      count: 1
+      weekdays: *id003
+    - start: 08:00
+      end: '20:00'
+      count: 1
+      weekdays: *id002
+    service: bloc
+    calibration: à calibrer (répartition par plage)
+  brancardier_service:
+    label: Brancardiers « montées-descentes » (service ↔ bloc)
+    role: brancardier
+    shifts:
+    - start: 07:30
+      end: '15:30'
+      count: 1
+      weekdays: *id001
+    - start: 09:00
+      end: '17:00'
+      count: 1
+      weekdays: *id001
+    - start: '11:00'
+      end: '19:00'
+      count: 1
+      weekdays: *id001
+    - start: '19:00'
+      end: 07:30
+      count: 1
+      weekdays: *id003
+    - start: 07:30
+      end: '19:00'
+      count: 1
+      weekdays: *id002
+    service: bloc
+  brancardier_bloc:
+    label: Brancardiers d'installation (salle, table, transfert SSPI)
+    role: brancardier
+    shifts:
+    - start: 07:30
+      end: '19:30'
+      count: 4
+      weekdays: *id001
+    - start: 08:00
+      end: '18:00'
+      count: 3
+      weekdays: *id001
+    - start: 07:30
+      end: '19:30'
+      count: 1
+      weekdays: *id002
+    - start: '19:00'
+      end: 07:30
+      count: 1
+      weekdays: *id003
+    service: bloc
+    calibration: à calibrer (répartition par plage)
+  ash:
+    label: Agents de bionettoyage (ASH)
+    role: ash
+    shifts:
+    - start: 07:30
+      end: '19:30'
+      count: 2
+      weekdays: *id001
+    - start: 09:00
+      end: '17:00'
+      count: 2
+      weekdays: *id001
+    - start: '10:00'
+      end: '18:00'
+      count: 1
+      weekdays: *id001
+    - start: 07:30
+      end: '19:30'
+      count: 1
+      weekdays: *id002
+    - start: '19:30'
+      end: 07:30
+      count: 1
+      weekdays: *id003
+    service: bloc
+    calibration: à calibrer (répartition par plage)
+  mar_supervision:
+    label: Places de supervision anesthésique (2 patients par MAR)
+    role: mar
+    service: bloc
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 14
+      weekdays: *id001
+      follows: salle_op
+      per_unit: 1.0
+      extra: 2
+    - start: '18:30'
+      end: '20:00'
+      count: 4
+      weekdays: *id001
+    - start: 08:00
+      end: '20:00'
+      count: 2
+      weekdays: *id002
+    - start: '20:00'
+      end: 08:00
+      count: 2
+      weekdays: *id003
+  ide_sspi_place:
+    label: Places surveillables en SSPI (4 patients par IDE)
+    kind: salle
+    service: bloc
+    shifts:
+    - start: 08:00
+      end: '15:30'
+      count: 4
+      weekdays: *id001
+    - start: 08:00
+      end: '18:00'
+      count: 8
+      weekdays: *id001
+    - start: '10:00'
+      end: '20:00'
+      count: 4
+      weekdays: *id001
+    - start: '12:00'
+      end: 00:00
+      count: 4
+      weekdays: *id003
+    - start: 08:00
+      end: '20:00'
+      count: 4
+      weekdays: *id002
+    calibration: à calibrer
+  chir_orthopedie:
+    label: Chirurgiens orthopédistes
+    role: chirurgien
+    service: bloc
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 5
+      weekdays: &id004
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+    - start: '18:30'
+      end: 08:00
+      count: 1
+      weekdays: &id005
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+    - start: 08:00
+      end: '18:30'
+      count: 1
+      weekdays:
+      - 5
+      - 6
+  chir_visceral:
+    label: Chirurgiens viscéraux
+    role: chirurgien
+    service: bloc
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 5
+      weekdays: *id004
+    - start: '18:30'
+      end: 08:00
+      count: 1
+      weekdays: *id005
+    - start: 08:00
+      end: '18:30'
+      count: 1
+      weekdays:
+      - 5
+      - 6
+  chir_orl:
+    label: Chirurgiens ORL et stomatologie
+    role: chirurgien
+    service: bloc
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 3
+      weekdays: *id004
+    - start: '18:30'
+      end: 08:00
+      count: 1
+      weekdays: *id005
+    - start: 08:00
+      end: '18:30'
+      count: 1
+      weekdays:
+      - 5
+      - 6
+  endoscopiste:
+    label: Endoscopistes
+    role: chirurgien
+    service: bloc
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 8
+      weekdays: *id004
+    - start: '18:30'
+      end: 08:00
+      count: 1
+      weekdays: *id005
+    - start: 08:00
+      end: '18:30'
+      count: 1
+      weekdays:
+      - 5
+      - 6
+  chir_gynecologie:
+    label: Gynécologues
+    role: chirurgien
+    service: bloc
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 5
+      weekdays: *id004
+    - start: '18:30'
+      end: 08:00
+      count: 1
+      weekdays: *id005
+    - start: 08:00
+      end: '18:30'
+      count: 1
+      weekdays:
+      - 5
+      - 6
+  chir_ophtalmologie:
+    label: Ophtalmologues
+    role: chirurgien
+    service: bloc
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 5
+      weekdays: *id004
+    - start: '18:30'
+      end: 08:00
+      count: 1
+      weekdays: *id005
+    - start: 08:00
+      end: '18:30'
+      count: 1
+      weekdays:
+      - 5
+      - 6
+  chir_urologie:
+    label: Urologues
+    role: chirurgien
+    service: bloc
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 5
+      weekdays: *id004
+    - start: '18:30'
+      end: 08:00
+      count: 1
+      weekdays: *id005
+    - start: 08:00
+      end: '18:30'
+      count: 1
+      weekdays:
+      - 5
+      - 6
+  cardiologue:
+    label: Cardiologues interventionnels
+    role: chirurgien
+    service: bloc
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 2
+      weekdays: *id004
+    - start: '18:30'
+      end: 08:00
+      count: 1
+      weekdays: *id005
+    - start: 08:00
+      end: '18:30'
+      count: 1
+      weekdays:
+      - 5
+      - 6
+  salle_op:
+    label: Salles d'opération (OP 2 à OP 11), ouvertes en moyenne 64% des jours ouvrés
+    kind: salle
+    service: bloc
+    calibration: mesuré (OPROOM)
+    shifts:
+    - start: 08:00
+      end: '18:30'
+      count: 10
+      weekdays:
+      - 0
+      availability: 0.5995
+    - start: 08:00
+      end: '18:30'
+      count: 10
+      weekdays:
+      - 1
+      availability: 0.5624
+    - start: 08:00
+      end: '18:30'
+      count: 10
+      weekdays:
+      - 2
+      availability: 0.662
+    - start: 08:00
+      end: '18:30'
+      count: 10
+      weekdays:
+      - 3
+      availability: 0.816
+    - start: 08:00
+      end: '18:30'
+      count: 10
+      weekdays:
+      - 4
+      availability: 0.5466
+    - start: '18:30'
+      end: 08:00
+      count: 1
+      weekdays: *id005
+      availability: 1.0
+    - start: 08:00
+      end: '18:30'
+      count: 1
+      weekdays:
+      - 5
+      - 6
+      availability: 1.0
+  lit_sspi:
+    label: Lits de SSPI
+    kind: salle
+    service: bloc
+    count: 13
+  poste_preanesthesie:
+    label: Postes de pré-anesthésie (assis et couchés)
+    kind: salle
+    service: bloc
+    count: 8
+    calibration: à calibrer
+  poste_salle:
+    label: Postes informatiques fixes en salle
+    kind: poste
+    service: bloc
+    count: 10
+  amplificateur:
+    label: Amplificateurs de brillance
+    kind: equipement
+    service: bloc
+    count: 3
+  colonne_coelioscopie:
+    label: Colonnes de coelioscopie / endoscopie
+    kind: equipement
+    service: bloc
+    count: 3
+  robot:
+    label: Robot chirurgical
+    kind: equipement
+    service: bloc
+    count: 1
+  microscope:
+    label: Microscopes opératoires
+    kind: equipement
+    service: bloc
+    count: 2
+  echographe:
+    label: Échographes d'anesthésie (ALR)
+    kind: equipement
+    service: bloc
+    count: 3
+pathways:
+- id: prog_cardiologie
+  label: Cardiologie — programmé
+  service: bloc
+  specialty: Cardiologie
+  arrivals:
+    mode: planned
+    cancellation_rate: 0.2818
+  case_duration_min: &id006
+    dist: quantiles
+    points:
+      0.0: 18.0
+      0.05: 20.4
+      0.1: 26.400000000000002
+      0.25: 32.0
+      0.5: 46.0
+      0.75: 51.0
+      0.9: 54.6
+      0.95: 61.39999999999999
+      0.99: 65.88
+      1.0: 67.0
+  room_not_before: 08:30
+  room_last_start: '18:00'
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: accueil_preanesthesie
+    label: Accueil, vérifications et préparation en pré-anesthésie
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 5
+    resources:
+      poste_preanesthesie: 1
+    carry:
+    - poste_preanesthesie
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      cardiologue: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      amplificateur: 1.0
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: cardiologue
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: &id007
+          1: 0.55
+          2: 0.3
+          3: 0.12
+          4: 0.03
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: &id008
+          0: 0.3
+          1: 0.7
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 40.7
+      sd: 16.3
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: urg_cardiologie
+  label: Cardiologie — urgences
+  service: bloc
+  specialty: Cardiologie
+  urgent: true
+  arrivals:
+    per_day:
+      dist: fixed
+      value: 0.0132
+    window:
+      start: 00:00
+      end: '23:59'
+      weekdays: *id005
+    hourly_profile: &id009
+    - 0.0163
+    - 0.0091
+    - 0.0073
+    - 0.0115
+    - 0.0048
+    - 0.0042
+    - 0.003
+    - 0.0042
+    - 0.0466
+    - 0.0708
+    - 0.0617
+    - 0.0756
+    - 0.0423
+    - 0.0714
+    - 0.0926
+    - 0.0913
+    - 0.0913
+    - 0.0544
+    - 0.0623
+    - 0.0484
+    - 0.0448
+    - 0.0375
+    - 0.0345
+    - 0.0139
+    weekday_factors:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+  case_duration_min: *id006
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      cardiologue: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      amplificateur: 1.0
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: cardiologue
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: *id008
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 40.7
+      sd: 16.3
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: prog_chirurgie_generale_et_digestive
+  label: Chirurgie Générale et Digestive — programmé
+  service: bloc
+  specialty: Chirurgie Générale et Digestive
+  arrivals:
+    mode: planned
+    cancellation_rate: 0.3227
+  case_duration_min: &id010
+    dist: quantiles
+    points:
+      0.0: 24.0
+      0.05: 51.0
+      0.1: 60.0
+      0.25: 82.0
+      0.5: 109.0
+      0.75: 150.0
+      0.9: 220.60000000000014
+      0.95: 303.0
+      0.99: 425.75999999999976
+      1.0: 510.9119999999997
+  room_not_before: 08:30
+  room_last_start: '18:00'
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: accueil_preanesthesie
+    label: Accueil, vérifications et préparation en pré-anesthésie
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 5
+    resources:
+      poste_preanesthesie: 1
+    carry:
+    - poste_preanesthesie
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_visceral: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      colonne_coelioscopie: 0.5
+      echographe: 0.041
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_visceral
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: &id011
+          0: 0.6
+          1: 0.3
+          2: 0.1
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 57.3
+      sd: 22.9
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: urg_chirurgie_generale_et_digestive
+  label: Chirurgie Générale et Digestive — urgences
+  service: bloc
+  specialty: Chirurgie Générale et Digestive
+  urgent: true
+  arrivals:
+    per_day:
+      dist: fixed
+      value: 1.8256
+    window:
+      start: 00:00
+      end: '23:59'
+      weekdays: *id005
+    hourly_profile: *id009
+    weekday_factors:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+  case_duration_min: *id010
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_visceral: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      colonne_coelioscopie: 0.5
+      echographe: 0.041
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_visceral
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: *id011
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 57.3
+      sd: 22.9
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: prog_chirurgie_orl
+  label: Chirurgie ORL — programmé
+  service: bloc
+  specialty: Chirurgie ORL
+  arrivals:
+    mode: planned
+    cancellation_rate: 0.2918
+  case_duration_min: &id012
+    dist: quantiles
+    points:
+      0.0: 16.0
+      0.05: 37.900000000000006
+      0.1: 43.0
+      0.25: 59.0
+      0.5: 85.0
+      0.75: 125.0
+      0.9: 195.59999999999997
+      0.95: 253.2999999999999
+      0.99: 335.8799999999999
+      1.0: 403.05599999999987
+  room_not_before: 08:30
+  room_last_start: '18:00'
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: accueil_preanesthesie
+    label: Accueil, vérifications et préparation en pré-anesthésie
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 5
+    resources:
+      poste_preanesthesie: 1
+    carry:
+    - poste_preanesthesie
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_orl: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      microscope: 0.3
+      echographe: 0.003
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_orl
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: &id013
+          0: 0.8
+          1: 0.2
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 57.5
+      sd: 23.0
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: urg_chirurgie_orl
+  label: Chirurgie ORL — urgences
+  service: bloc
+  specialty: Chirurgie ORL
+  urgent: true
+  arrivals:
+    per_day:
+      dist: fixed
+      value: 0.2171
+    window:
+      start: 00:00
+      end: '23:59'
+      weekdays: *id005
+    hourly_profile: *id009
+    weekday_factors:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+  case_duration_min: *id012
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_orl: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      microscope: 0.3
+      echographe: 0.003
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_orl
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: *id013
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 57.5
+      sd: 23.0
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: prog_chirurgie_orthopedique
+  label: Chirurgie Orthopédique — programmé
+  service: bloc
+  specialty: Chirurgie Orthopédique
+  arrivals:
+    mode: planned
+    cancellation_rate: 0.258
+  case_duration_min: &id014
+    dist: quantiles
+    points:
+      0.0: 10.0
+      0.05: 34.0
+      0.1: 41.0
+      0.25: 64.0
+      0.5: 113.0
+      0.75: 148.0
+      0.9: 184.4000000000001
+      0.95: 207.60000000000014
+      0.99: 272.0799999999999
+      1.0: 326.4959999999999
+  room_not_before: 08:30
+  room_last_start: '18:00'
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: accueil_preanesthesie
+    label: Accueil, vérifications et préparation en pré-anesthésie
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 5
+    resources:
+      poste_preanesthesie: 1
+    carry:
+    - poste_preanesthesie
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_orthopedie: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      amplificateur: 0.6
+      echographe: 0.263
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_orthopedie
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: &id015
+          0: 0.4
+          1: 0.35
+          2: 0.15
+          3: 0.1
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 53.1
+      sd: 21.3
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: urg_chirurgie_orthopedique
+  label: Chirurgie Orthopédique — urgences
+  service: bloc
+  specialty: Chirurgie Orthopédique
+  urgent: true
+  arrivals:
+    per_day:
+      dist: fixed
+      value: 1.7435
+    window:
+      start: 00:00
+      end: '23:59'
+      weekdays: *id005
+    hourly_profile: *id009
+    weekday_factors:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+  case_duration_min: *id014
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_orthopedie: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      amplificateur: 0.6
+      echographe: 0.263
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_orthopedie
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: *id015
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 53.1
+      sd: 21.3
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: prog_chirurgie_urologique
+  label: Chirurgie Urologique — programmé
+  service: bloc
+  specialty: Chirurgie Urologique
+  arrivals:
+    mode: planned
+    cancellation_rate: 0.2131
+  case_duration_min: &id016
+    dist: quantiles
+    points:
+      0.0: 20.0
+      0.05: 49.0
+      0.1: 54.0
+      0.25: 65.0
+      0.5: 84.0
+      0.75: 122.0
+      0.9: 158.0
+      0.95: 207.94999999999993
+      0.99: 361.94999999999993
+      1.0: 434.3399999999999
+  room_not_before: 08:30
+  room_last_start: '18:00'
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: accueil_preanesthesie
+    label: Accueil, vérifications et préparation en pré-anesthésie
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 5
+    resources:
+      poste_preanesthesie: 1
+    carry:
+    - poste_preanesthesie
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_urologie: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      colonne_coelioscopie: 0.3
+      amplificateur: 0.2
+      echographe: 0.08
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_urologie
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: &id017
+          0: 0.6
+          1: 0.3
+          2: 0.1
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 54.3
+      sd: 21.7
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: urg_chirurgie_urologique
+  label: Chirurgie Urologique — urgences
+  service: bloc
+  specialty: Chirurgie Urologique
+  urgent: true
+  arrivals:
+    per_day:
+      dist: fixed
+      value: 0.773
+    window:
+      start: 00:00
+      end: '23:59'
+      weekdays: *id005
+    hourly_profile: *id009
+    weekday_factors:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+  case_duration_min: *id016
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_urologie: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      colonne_coelioscopie: 0.3
+      amplificateur: 0.2
+      echographe: 0.08
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_urologie
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: *id017
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 54.3
+      sd: 21.7
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: prog_endoscopie_digestive
+  label: Endoscopie Digestive — programmé
+  service: bloc
+  specialty: Endoscopie Digestive
+  arrivals:
+    mode: planned
+    cancellation_rate: 0.1429
+  case_duration_min: &id018
+    dist: quantiles
+    points:
+      0.0: 11.0
+      0.05: 20.0
+      0.1: 22.0
+      0.25: 27.0
+      0.5: 35.0
+      0.75: 46.0
+      0.9: 59.0
+      0.95: 69.0
+      0.99: 96.0
+      1.0: 115.19999999999999
+  room_not_before: 08:30
+  room_last_start: '18:00'
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 0.5
+  - id: accueil_preanesthesie
+    label: Accueil, vérifications et préparation en pré-anesthésie
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 5
+    resources:
+      poste_preanesthesie: 1
+    carry:
+    - poste_preanesthesie
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      endoscopiste: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: endoscopiste
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: &id019
+          0: 0.9
+          1: 0.1
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 54.4
+      sd: 21.8
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: urg_endoscopie_digestive
+  label: Endoscopie Digestive — urgences
+  service: bloc
+  specialty: Endoscopie Digestive
+  urgent: true
+  arrivals:
+    per_day:
+      dist: fixed
+      value: 0.0558
+    window:
+      start: 00:00
+      end: '23:59'
+      weekdays: *id005
+    hourly_profile: *id009
+    weekday_factors:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+  case_duration_min: *id018
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 0.5
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      endoscopiste: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: endoscopiste
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: *id019
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 54.4
+      sd: 21.8
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: prog_gynecologie_obstetrique
+  label: Gynécologie Obstétrique — programmé
+  service: bloc
+  specialty: Gynécologie Obstétrique
+  arrivals:
+    mode: planned
+    cancellation_rate: 0.1328
+  case_duration_min: &id020
+    dist: quantiles
+    points:
+      0.0: 18.0
+      0.05: 30.0
+      0.1: 33.0
+      0.25: 41.0
+      0.5: 60.0
+      0.75: 92.0
+      0.9: 121.0
+      0.95: 147.8499999999999
+      0.99: 238.16999999999996
+      1.0: 285.8039999999999
+  room_not_before: 08:30
+  room_last_start: '18:00'
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: accueil_preanesthesie
+    label: Accueil, vérifications et préparation en pré-anesthésie
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 5
+    resources:
+      poste_preanesthesie: 1
+    carry:
+    - poste_preanesthesie
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_gynecologie: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      colonne_coelioscopie: 0.4
+      echographe: 0.209
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_gynecologie
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: &id021
+          0: 0.8
+          1: 0.2
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 44.2
+      sd: 17.7
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: urg_gynecologie_obstetrique
+  label: Gynécologie Obstétrique — urgences
+  service: bloc
+  specialty: Gynécologie Obstétrique
+  urgent: true
+  arrivals:
+    per_day:
+      dist: fixed
+      value: 0.7598
+    window:
+      start: 00:00
+      end: '23:59'
+      weekdays: *id005
+    hourly_profile: *id009
+    weekday_factors:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+  case_duration_min: *id020
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_gynecologie: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      colonne_coelioscopie: 0.4
+      echographe: 0.209
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_gynecologie
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: *id021
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 44.2
+      sd: 17.7
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: prog_ophtalmologie
+  label: Ophtalmologie — programmé
+  service: bloc
+  specialty: Ophtalmologie
+  arrivals:
+    mode: planned
+    cancellation_rate: 0.1235
+  case_duration_min:
+    dist: quantiles
+    points:
+      0.0: 3.0
+      0.05: 13.0
+      0.1: 14.0
+      0.25: 15.0
+      0.5: 17.0
+      0.75: 21.0
+      0.9: 28.0
+      0.95: 39.0
+      0.99: 62.0
+      1.0: 74.39999999999999
+  room_not_before: 08:30
+  room_last_start: '18:00'
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 0.3
+  - id: accueil_preanesthesie
+    label: Accueil, vérifications et préparation en pré-anesthésie
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 5
+    resources:
+      poste_preanesthesie: 1
+    carry:
+    - poste_preanesthesie
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_ophtalmologie: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      microscope: 1.0
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_ophtalmologie
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values:
+          0: 0.05
+          1: 0.95
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 22.5
+      sd: 9.0
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: prog_stomatologie
+  label: Stomatologie — programmé
+  service: bloc
+  specialty: Stomatologie
+  arrivals:
+    mode: planned
+    cancellation_rate: 0.1838
+  case_duration_min: &id022
+    dist: quantiles
+    points:
+      0.0: 30.0
+      0.05: 52.5
+      0.1: 57.5
+      0.25: 69.75
+      0.5: 91.0
+      0.75: 106.0
+      0.9: 142.0
+      0.95: 160.0
+      0.99: 204.09999999999997
+      1.0: 208.0
+  room_not_before: 08:30
+  room_last_start: '18:00'
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: accueil_preanesthesie
+    label: Accueil, vérifications et préparation en pré-anesthésie
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 5
+    resources:
+      poste_preanesthesie: 1
+    carry:
+    - poste_preanesthesie
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_orl: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_orl
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: &id023
+          0: 0.8
+          1: 0.2
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 52.7
+      sd: 21.1
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: urg_stomatologie
+  label: Stomatologie — urgences
+  service: bloc
+  specialty: Stomatologie
+  urgent: true
+  arrivals:
+    per_day:
+      dist: fixed
+      value: 0.0164
+    window:
+      start: 00:00
+      end: '23:59'
+      weekdays: *id005
+    hourly_profile: *id009
+    weekday_factors:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+  case_duration_min: *id022
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_orl: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_orl
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: *id023
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 52.7
+      sd: 21.1
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: prog_urologie_robot
+  label: UROLOGIE ROBOT — programmé
+  service: bloc
+  specialty: UROLOGIE ROBOT
+  arrivals:
+    mode: planned
+    cancellation_rate: 0.1778
+  case_duration_min:
+    dist: quantiles
+    points:
+      0.0: 111.0
+      0.05: 167.75
+      0.1: 203.5
+      0.25: 284.25
+      0.5: 331.5
+      0.75: 459.5
+      0.9: 539.5
+      0.95: 546.0
+      0.99: 556.8
+      1.0: 561.0
+  room_not_before: 08:30
+  room_last_start: '18:00'
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: accueil_preanesthesie
+    label: Accueil, vérifications et préparation en pré-anesthésie
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 5
+    resources:
+      poste_preanesthesie: 1
+    carry:
+    - poste_preanesthesie
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_urologie: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      robot: 1.0
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_urologie
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values:
+          0: 0.5
+          1: 0.4
+          2: 0.1
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 63.7
+      sd: 25.5
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: prog_visceral_robot
+  label: VISCERAL ROBOT — programmé
+  service: bloc
+  specialty: VISCERAL ROBOT
+  arrivals:
+    mode: planned
+    cancellation_rate: 0.3377
+  case_duration_min: &id024
+    dist: quantiles
+    points:
+      0.0: 75.0
+      0.05: 111.0
+      0.1: 134.0
+      0.25: 163.0
+      0.5: 188.0
+      0.75: 262.0
+      0.9: 340.0
+      0.95: 408.0
+      0.99: 421.79999999999995
+      1.0: 438.0
+  room_not_before: 08:30
+  room_last_start: '18:00'
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: accueil_preanesthesie
+    label: Accueil, vérifications et préparation en pré-anesthésie
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 5
+    resources:
+      poste_preanesthesie: 1
+    carry:
+    - poste_preanesthesie
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_visceral: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      robot: 1.0
+      echographe: 0.016
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_visceral
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: &id025
+          0: 0.5
+          1: 0.4
+          2: 0.1
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 56.6
+      sd: 22.6
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+- id: urg_visceral_robot
+  label: VISCERAL ROBOT — urgences
+  service: bloc
+  specialty: VISCERAL ROBOT
+  urgent: true
+  arrivals:
+    per_day:
+      dist: fixed
+      value: 0.0329
+    window:
+      start: 00:00
+      end: '23:59'
+      weekdays: *id005
+    hourly_profile: *id009
+    weekday_factors:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+  case_duration_min: *id024
+  steps:
+  - id: brancardage_aller
+    label: Service → bloc (brancard, fauteuil ou à pied)
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+  - id: installation
+    label: Entrée en salle et installation sur la table
+    duration_share: 0.1
+    resources:
+      salle_op: 1
+      iade: 1
+      brancardier_bloc: 1
+    carry:
+    - salle_op
+    - iade
+  - id: induction
+    label: Induction anesthésique (MAR présent, une induction à la fois)
+    duration_share: 0.12
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: intervention
+    label: Incision → fermeture
+    duration_share: 0.62
+    resources:
+      salle_op: 1
+      iade: 1
+      chir_visceral: 1
+      ibode: 1
+      mar_supervision: 1
+    optional_resources:
+      robot: 1.0
+      echographe: 0.016
+      ide_bloc: 0.5
+    carry:
+    - salle_op
+    - iade
+    documentation:
+    - kind: tracabilite_actes
+      role: chir_visceral
+      current_system: logiciel_bloc
+      items:
+        dist: empirical
+        values: *id007
+      time_per_entry_min:
+        dist: triangular
+        low: 0.5
+        mode: 1.0
+        high: 2.0
+      time_per_item_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      workstation: poste_salle
+    - kind: tracabilite_dm
+      role: ibode
+      current_system: papier
+      items:
+        dist: empirical
+        values: *id025
+      time_per_entry_min:
+        dist: triangular
+        low: 0.3
+        mode: 0.5
+        high: 1.0
+      time_per_item_min:
+        dist: triangular
+        low: 1.0
+        mode: 2.0
+        high: 3.0
+  - id: reveil_sortie
+    label: Pansement, réveil et sortie de salle
+    duration_share: 0.16
+    resources:
+      salle_op: 1
+      iade: 1
+      mar: 1
+    carry:
+    - salle_op
+    - iade
+  - id: bionettoyage
+    label: Bionettoyage de la salle (en parallèle du transfert)
+    duration_min:
+      dist: lognormal
+      mean: 8
+      sd: 4
+    resources:
+      salle_op: 1
+      ash: 1
+    detached: true
+  - id: transfert_sspi
+    label: Transfert en SSPI et transmissions (IADE)
+    duration_min:
+      dist: lognormal
+      mean: 5
+      sd: 2
+    resources:
+      iade: 1
+      brancardier_bloc: 1
+  - id: sspi
+    label: Surveillance en SSPI
+    duration_min:
+      dist: lognormal
+      mean: 56.6
+      sd: 22.6
+    resources:
+      lit_sspi: 1
+      ide_sspi_place: 1
+  - id: brancardage_retour
+    label: Bloc → service
+    duration_min:
+      dist: lognormal
+      mean: 10
+      sd: 4
+    optional_resources:
+      brancardier_service: 1.0
+programme:
+  room_pool: salle_op
+  weekdays: *id004
+  start: 08:30
+  end: '18:00'
+  fill_ratio: 0.73
+  turnover_min: 7.0
+  call_ahead_min: 60
+  specialty_weights:
+    prog_cardiologie: 763.9
+    prog_chirurgie_generale_et_digestive: 98263.5
+    prog_chirurgie_orl: 46143.9
+    prog_chirurgie_orthopedique: 131685.3
+    prog_chirurgie_urologique: 82156.2
+    prog_endoscopie_digestive: 52016.4
+    prog_gynecologie_obstetrique: 54214.7
+    prog_ophtalmologie: 33049.7
+    prog_stomatologie: 12702.4
+    prog_urologie_robot: 15946.5
+    prog_visceral_robot: 16772.4
+information_system:
+  sso: true
+  applications:
+    logiciel_bloc:
+      label: Logiciel de gestion du bloc
+      category: bloc
+      standards:
+      - HL7v2
+    dpi:
+      label: Dossier patient informatisé
+      category: DPI
+      standards:
+      - HL7v2
+      - FHIR
+    pmsi:
+      label: PMSI / codage
+      category: PMSI
+      standards:
+      - HL7v2
+    papier:
+      label: Registre papier (traçabilité des DM)
+      category: papier
+  interfaces:
+  - source: logiciel_bloc
+    target: dpi
+    standard: HL7v2
+    message: actes et horaires
+  - source: dpi
+    target: pmsi
+    standard: HL7v2
+    message: actes codés

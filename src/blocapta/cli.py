@@ -253,6 +253,59 @@ def audit(
     console.print(f"[green]Rapport :[/] {output}, {output.with_suffix('.html')}, {output.with_suffix('.json')}")
 
 
+@app.command("reference")
+def reference_cmd(
+    output: Path = typer.Option(Path("src/blocapta/data/archetypes/bloc_reference.yaml"), "-o"),
+    stats: Path | None = typer.Option(None, help="Statistiques agrégées (tools/oproom_aggregate.py)"),
+    staffing: Path | None = typer.Option(None, help="Effectifs, horaires et hypothèses (YAML)"),
+):
+    """(Re)construit le bloc de référence à partir des données agrégées et des effectifs."""
+    from .reference import build_reference_bloc, load_staffing, load_stats
+
+    d = build_reference_bloc(load_stats(stats), load_staffing(staffing))
+    header = (
+        "# FICHIER GÉNÉRÉ par `blocapta reference build` à partir de data/reference/ (ne pas éditer à la main).\n"
+        "# Hériter de cet archétype avec  extends: bloc_reference  pour décrire un autre bloc.\n"
+    )
+    output.write_text(header + dump_yaml(d), encoding="utf-8")
+    console.print(f"[green]Bloc de référence :[/] {output} ({len(d['pathways'])} parcours)")
+    for item in d["metadata"]["parametres_a_calibrer"].split(" | "):
+        console.print(f"  [yellow]à calibrer[/] {item}")
+
+
+@app.command()
+def fidelite(
+    hospital: Path | None = typer.Option(None, help="Configuration à tester (défaut : bloc de référence)"),
+    days: int = 56,
+    replications: int = 10,
+    seed: int = 7,
+    workers: int = 1,
+    output: Path | None = typer.Option(None, "-o", help="Résultat JSON"),
+):
+    """Test de fidélité (Stop/Go) : le bloc simulé sans outil retrouve-t-il les chiffres réels ?"""
+    from .reference import fidelity_targets
+    from .simulation import check_fidelity
+
+    h = load_hospital(hospital) if hospital else load_hospital({"id": "ref", "name": "ref", "extends": "bloc_reference"})
+    with console.status("Simulation de l'existant…"):
+        r = check_fidelity(h, fidelity_targets(), days=days, replications=replications, seed=seed, workers=workers)
+    t = Table(title=f"Fidélité — {replications} × {days} jours — verdict {r.verdict}")
+    for col in ("Indicateur", "Observé", "Simulé [IC 95 %]", "Écart", "Tolérance", ""):
+        t.add_column(col)
+    for row in r.rows:
+        t.add_row(
+            row.indicator, f"{row.observed:.1f}", f"{row.simulated:.1f} [{row.ci_low:.1f} ; {row.ci_high:.1f}]",
+            f"{row.error_pct:.1f} %", row.tolerance, "[green]OK[/]" if row.ok else "[red]ÉCART[/]",
+        )
+    console.print(t)
+    console.print(f"Contrôles physiques : {r.invariants} → {'[green]OK[/]' if r.invariants_ok else '[red]ÉCHEC[/]'}")
+    console.print(f"[bold]Verdict : {r.verdict}[/]")
+    if output:
+        output.write_text(r.model_dump_json(indent=2), encoding="utf-8")
+    if r.verdict != "GO":
+        raise typer.Exit(1)
+
+
 @app.command()
 def serve(host: str = "0.0.0.0", port: int = 8000, reload: bool = False):
     """Lance l'API REST (documentation sur /docs)."""

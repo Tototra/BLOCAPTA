@@ -80,6 +80,7 @@ def aggregate(path: Path) -> dict:
             "sd_min": round(float(d.std(ddof=1)), 1) if len(g) > 1 else 0.0,
             "p10_min": float(d.quantile(0.1)),
             "p90_min": float(d.quantile(0.9)),
+            "quantiles_min": {str(q): float(d.quantile(q)) for q in (0.0, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 1.0)},
             "mu_log": round(float(logd.mean()), 4),
             "sigma_log": round(float(logd.std(ddof=1)), 4) if len(g) > 1 else 0.0,
             "urgent_share": round(float(g["urgent"].mean()), 4),

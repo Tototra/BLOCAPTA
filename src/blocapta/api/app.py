@@ -216,6 +216,22 @@ def simulations(body: SimulationIn) -> dict:
     return simulate_audit(h, sw, body.days, body.replications, body.seed).model_dump()
 
 
+class FidelityIn(BaseModel):
+    hospital: dict | None = None
+    days: int = Field(56, ge=7, le=365)
+    replications: int = Field(10, ge=1, le=100)
+    seed: int = 7
+
+
+@app.post("/fidelity")
+def fidelity(body: FidelityIn) -> dict:
+    from ..reference import fidelity_targets
+    from ..simulation import check_fidelity
+
+    h = _hospital(body.hospital or {"id": "ref", "name": "ref", "extends": "bloc_reference"})
+    return check_fidelity(h, fidelity_targets(), body.days, body.replications, body.seed).model_dump()
+
+
 # ------------------------------------------------------------------ audit
 @app.post("/audits")
 async def audits(
