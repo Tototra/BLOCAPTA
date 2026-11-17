@@ -1,0 +1,107 @@
+# Archétype : centre hospitalier général (~450 lits), centré sur le bloc opératoire.
+# Valeurs d'ordre de grandeur, à remplacer par les données de l'établissement
+# (questionnaire DSI + calibration sur les logs horodatés).
+id: archetype_ch_general
+name: Centre hospitalier général (archétype)
+archetype: ch_general
+metadata:
+  type: CH
+  lits: 450
+  source: valeurs par défaut BLOCAPTA, non calibrées
+
+services:
+  bloc:
+    label: Bloc opératoire central
+    kind: bloc
+    closing_time: "19:00"
+  hospitalisation_chirurgie:
+    label: Hospitalisation chirurgicale
+    kind: hospitalisation
+    beds: 60
+
+resources:
+  brancardier:
+    label: Brancardiers
+    count: 4
+    shift: { start: "07:00", end: "20:00", weekdays: [0, 1, 2, 3, 4] }
+  salle_bloc:
+    label: Salles d'opération
+    kind: salle
+    service: bloc
+    count: 8
+    shift: { start: "07:30", end: "19:00", weekdays: [0, 1, 2, 3, 4] }
+  chirurgien:
+    label: Chirurgiens
+    service: bloc
+    count: 10
+    shift: { start: "07:30", end: "19:30", weekdays: [0, 1, 2, 3, 4] }
+  anesthesiste:
+    label: Équipes d'anesthésie (MAR + IADE)
+    service: bloc
+    count: 8
+    shift: { start: "07:30", end: "19:30", weekdays: [0, 1, 2, 3, 4] }
+  ibode:
+    label: Infirmiers de bloc (IBODE)
+    service: bloc
+    count: 12
+    shift: { start: "07:30", end: "19:30", weekdays: [0, 1, 2, 3, 4] }
+  lit_sspi:
+    label: Places de SSPI
+    kind: salle
+    service: bloc
+    count: 10
+  poste_bloc:
+    label: Postes informatiques fixes en salle
+    kind: poste
+    service: bloc
+    count: 8
+
+pathways:
+  - id: chirurgie_programmee
+    label: Chirurgie programmée
+    service: bloc
+    arrivals:
+      per_day: { dist: poisson, lam: 26 }
+      window: { start: "07:00", end: "15:30", weekdays: [0, 1, 2, 3, 4] }
+      hourly_profile: [0, 0, 0, 0, 0, 0, 0, 10, 12, 11, 9, 7, 6, 8, 7, 5, 0, 0, 0, 0, 0, 0, 0, 0]
+    steps:
+      - id: brancardage_aller
+        label: Brancardage chambre → bloc
+        duration_min: { dist: lognormal, mean: 20, sd: 9 }
+        resources: { brancardier: 1 }
+      - id: attente_bloc
+        label: Attente en zone d'accueil du bloc
+        duration_min: { dist: lognormal, mean: 15, sd: 10 }
+      - id: intervention
+        label: Installation, induction, intervention, réveil en salle
+        duration_min: { dist: lognormal, mean: 120, sd: 45 }
+        resources: { salle_bloc: 1, chirurgien: 1, anesthesiste: 1, ibode: 1 }
+        documentation:
+          - kind: tracabilite_actes
+            role: chirurgien
+            current_system: dpi
+            items: { dist: empirical, values: { 1: 0.45, 2: 0.35, 3: 0.15, 4: 0.05 } }
+            time_per_entry_min: { dist: triangular, low: 0.5, mode: 1.0, high: 2.0 }
+            time_per_item_min: { dist: triangular, low: 0.3, mode: 0.5, high: 1.0 }
+            workstation: poste_bloc
+      - id: sspi
+        label: Salle de surveillance post-interventionnelle
+        duration_min: { dist: lognormal, mean: 60, sd: 25 }
+        resources: { lit_sspi: 1 }
+      - id: brancardage_retour
+        label: Brancardage bloc → chambre
+        duration_min: { dist: lognormal, mean: 15, sd: 7 }
+        resources: { brancardier: 1 }
+
+information_system:
+  sso: true
+  identity_provider: Active Directory
+  hosting_policy: mixte
+  applications:
+    dpi: { label: Dossier patient informatisé, category: DPI, standards: [HL7v2, FHIR] }
+    pmsi: { label: Logiciel PMSI / codage, category: PMSI, standards: [HL7v2] }
+    gestion_bloc: { label: Planification du bloc, category: bloc, standards: [HL7v2] }
+    eai: { label: Plateforme d'intégration, category: EAI, standards: [HL7v2, FHIR] }
+  interfaces:
+    - { source: dpi, target: pmsi, standard: HL7v2, message: actes codés }
+    - { source: gestion_bloc, target: dpi, standard: HL7v2, message: programme opératoire }
