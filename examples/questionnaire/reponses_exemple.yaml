@@ -1,0 +1,28 @@
+# Exemple de réponses au questionnaire DSI (fictives).
+id: ch_val_de_loire
+archetype: ch_general
+answers:
+  A1: Centre hospitalier du Val (fictif)
+  A2: CH
+  A3: 520
+  B1: 9
+  B2: "07:45-18:30"
+  B3: lun-ven
+  B4: "18:30"
+  B5: 31
+  B6: { mean: 110, sd: 40 }
+  B7: { 1: 0.40, 2: 0.36, 3: 0.17, 4: 0.07 }
+  B8: 12
+  C1: 11
+  C2: 9
+  C3: 13
+  C4: "07:30-19:00"
+  D1: 5
+  D3: { mean: 24, sd: 11 }
+  E2: [0.5, 1.2, 2.5]
+  E3: [0.3, 0.6, 1.2]
+  E4: 9
+  E5: non
+  F1: Éditeur DPI X
+  F5: oui
+  H1: Les chirurgiens ressaisissent les actes dans le DPI quand le logiciel de bloc est en panne.

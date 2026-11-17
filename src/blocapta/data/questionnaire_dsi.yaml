@@ -1,0 +1,264 @@
+# Questionnaire DSI : informations à collecter pour paramétrer le jumeau numérique.
+#
+# Chaque question peut être reliée à la configuration (maps_to + transform) :
+# la réponse est alors appliquée automatiquement sur l'archétype choisi.
+# Les questions sans maps_to sont du contexte : elles sont transmises au LLM
+# configurateur (ou conservées en notes si le LLM est désactivé).
+#
+# transform : int | float | bool | text | time | time_window | weekdays | poisson
+#             | lognormal | empirical | seconds_to_fixed_minutes | triangular_minutes
+title: Questionnaire de paramétrage du jumeau numérique BLOCAPTA
+version: 1
+intro: >
+  Ce questionnaire permet de construire une simulation fidèle de votre établissement afin d'évaluer
+  l'impact d'un logiciel avant son déploiement. Répondez avec des ordres de grandeur si vous n'avez pas
+  de chiffres exacts ; indiquez « inconnu » sinon. Les exports de données horodatées (section G) sont
+  la source la plus précieuse : ils permettent de calibrer automatiquement les durées.
+
+sections:
+  - id: A
+    title: Établissement
+    questions:
+      - id: A1
+        question: Nom de l'établissement
+        transform: text
+        maps_to: /name
+        required: true
+      - id: A2
+        question: Type d'établissement
+        help: "CHU, CH, clinique privée MCO, ESPIC, SSR, psychiatrie"
+        transform: text
+        maps_to: /metadata/type
+        required: true
+      - id: A3
+        question: Nombre total de lits et places
+        transform: int
+        maps_to: /metadata/lits
+      - id: A4
+        question: Nombre de sites géographiques et distance entre eux
+        transform: text
+      - id: A5
+        question: Numéro FINESS (facultatif)
+        transform: text
+        maps_to: /metadata/finess
+
+  - id: B
+    title: Bloc opératoire — structure et activité
+    questions:
+      - id: B1
+        question: Nombre de salles d'opération ouvertes en routine
+        transform: int
+        unit: salles
+        maps_to: /resources/salle_bloc/count
+        required: true
+      - id: B2
+        question: Horaires d'ouverture des salles
+        example: "07:30-19:00"
+        transform: time_window
+        maps_to: /resources/salle_bloc/shift
+        required: true
+      - id: B3
+        question: Jours d'ouverture du bloc programmé
+        example: "lun-ven"
+        transform: weekdays
+        maps_to:
+          - /resources/salle_bloc/shift/weekdays
+          - /pathways[id=chirurgie_programmee]/arrivals/window/weekdays
+      - id: B4
+        question: Heure de fin théorique de l'activité du bloc (pour mesurer les dépassements)
+        example: "19:00"
+        transform: time
+        maps_to: /services/bloc/closing_time
+      - id: B5
+        question: Nombre moyen d'interventions programmées par jour ouvré
+        transform: poisson
+        unit: interventions/jour
+        maps_to: /pathways[id=chirurgie_programmee]/arrivals/per_day
+        required: true
+      - id: B6
+        question: Durée moyenne et écart-type d'occupation de salle par intervention (entrée → sortie de salle)
+        example: "{mean: 120, sd: 45}"
+        transform: lognormal
+        unit: minutes
+        maps_to: /pathways[id=chirurgie_programmee]/steps[id=intervention]/duration_min
+        required: true
+      - id: B7
+        question: Répartition du nombre d'actes CCAM codés par intervention
+        help: "Part des interventions avec 1, 2, 3, 4 actes ou plus. Information clé pour les outils de traçabilité."
+        example: "{1: 0.45, 2: 0.35, 3: 0.15, 4: 0.05}"
+        transform: empirical
+        maps_to: /pathways[id=chirurgie_programmee]/steps[id=intervention]/documentation/0/items
+        required: true
+      - id: B8
+        question: Nombre de places en SSPI (salle de réveil)
+        transform: int
+        maps_to: /resources/lit_sspi/count
+      - id: B9
+        question: Durée moyenne et écart-type de séjour en SSPI
+        example: "{mean: 60, sd: 25}"
+        transform: lognormal
+        unit: minutes
+        maps_to: /pathways[id=chirurgie_programmee]/steps[id=sspi]/duration_min
+      - id: B10
+        question: Part de l'activité en urgence (hors programme) et organisation de la garde
+        transform: text
+
+  - id: C
+    title: Ressources humaines
+    questions:
+      - id: C1
+        question: Nombre de chirurgiens opérant simultanément un jour type
+        transform: int
+        maps_to: /resources/chirurgien/count
+        required: true
+      - id: C2
+        question: Nombre d'équipes d'anesthésie (MAR + IADE) disponibles simultanément
+        transform: int
+        maps_to: /resources/anesthesiste/count
+      - id: C3
+        question: Nombre d'IBODE / IDE de bloc présents simultanément
+        transform: int
+        maps_to: /resources/ibode/count
+      - id: C4
+        question: Horaires de travail des équipes de bloc
+        example: "07:30-19:30"
+        transform: time_window
+        maps_to:
+          - /resources/chirurgien/shift
+          - /resources/anesthesiste/shift
+          - /resources/ibode/shift
+      - id: C5
+        question: Rôles qui réalisent aujourd'hui la traçabilité des actes (chirurgien, IBODE, secrétariat…)
+        transform: text
+
+  - id: D
+    title: Brancardage et logistique patient
+    questions:
+      - id: D1
+        question: Nombre de brancardiers affectés au bloc présents simultanément
+        transform: int
+        maps_to: /resources/brancardier/count
+      - id: D2
+        question: Horaires des brancardiers
+        example: "07:00-20:00"
+        transform: time_window
+        maps_to: /resources/brancardier/shift
+      - id: D3
+        question: Durée moyenne et écart-type d'un brancardage chambre → bloc (demande → dépose)
+        example: "{mean: 20, sd: 9}"
+        transform: lognormal
+        unit: minutes
+        maps_to: /pathways[id=chirurgie_programmee]/steps[id=brancardage_aller]/duration_min
+      - id: D4
+        question: Durée moyenne et écart-type d'un brancardage retour bloc → chambre
+        example: "{mean: 15, sd: 7}"
+        transform: lognormal
+        unit: minutes
+        maps_to: /pathways[id=chirurgie_programmee]/steps[id=brancardage_retour]/duration_min
+      - id: D5
+        question: Outil de gestion du brancardage utilisé (et export possible des horodatages ?)
+        transform: text
+
+  - id: E
+    title: Documentation et traçabilité au bloc
+    questions:
+      - id: E1
+        question: Application utilisée aujourd'hui pour tracer les actes opératoires
+        help: "Identifiant d'une application déclarée en section F (par défaut : dpi)"
+        transform: text
+        maps_to: /pathways[id=chirurgie_programmee]/steps[id=intervention]/documentation/0/current_system
+      - id: E2
+        question: Temps moyen d'ouverture et de validation d'une saisie (sans compter les actes), min / mode / max
+        example: "[0.5, 1, 2]"
+        transform: triangular_minutes
+        maps_to: /pathways[id=chirurgie_programmee]/steps[id=intervention]/documentation/0/time_per_entry_min
+      - id: E3
+        question: Temps moyen par acte saisi, min / mode / max (en minutes)
+        example: "[0.3, 0.5, 1]"
+        transform: triangular_minutes
+        maps_to: /pathways[id=chirurgie_programmee]/steps[id=intervention]/documentation/0/time_per_item_min
+      - id: E4
+        question: Nombre de postes informatiques fixes utilisables en salle d'opération (total bloc)
+        transform: int
+        maps_to: /resources/poste_bloc/count
+      - id: E5
+        question: Les postes de salle sont-ils mobiles (chariots, tablettes) ?
+        transform: bool
+        maps_to: /resources/poste_bloc/mobile
+      - id: E6
+        question: Autres documents produits au bloc (CRO, check-list HAS, traçabilité DM implantables…) et outils associés
+        transform: text
+
+  - id: F
+    title: Système d'information
+    questions:
+      - id: F1
+        question: Éditeur et produit du DPI
+        transform: text
+        maps_to: /information_system/applications/dpi/vendor
+      - id: F2
+        question: Standards supportés par le DPI
+        example: "[HL7v2, FHIR]"
+        transform: list
+        maps_to: /information_system/applications/dpi/standards
+      - id: F3
+        question: Éditeur et produit du logiciel PMSI / codage
+        transform: text
+        maps_to: /information_system/applications/pmsi/vendor
+      - id: F4
+        question: Liste des interfaces existantes (source → cible, standard, message)
+        help: "Ex. DPI → PMSI en HL7v2 (actes), Gestion bloc → DPI en HL7v2 (programme)"
+        transform: text
+      - id: F5
+        question: L'établissement utilise-t-il une authentification unique (SSO) ?
+        transform: bool
+        maps_to: /information_system/sso
+      - id: F6
+        question: Fournisseur d'identité (Active Directory, Keycloak, Pro Santé Connect…)
+        transform: text
+        maps_to: /information_system/identity_provider
+      - id: F7
+        question: Politique d'hébergement (on_premise, cloud_hds, mixte)
+        transform: text
+        maps_to: /information_system/hosting_policy
+      - id: F8
+        question: Couverture Wi-Fi et réseau au bloc, en SSPI et dans les services
+        transform: text
+      - id: F9
+        question: Plateforme d'intégration (EAI) utilisée
+        transform: text
+        maps_to: /information_system/applications/eai/vendor
+
+  - id: G
+    title: Données disponibles pour la calibration
+    questions:
+      - id: G1
+        question: Exports horodatés disponibles (brancardage, bloc, ADT, urgences, DPI)
+        help: "Format attendu : une ligne par événement — identifiant de séjour pseudonymisé, étape, date-heure."
+        transform: text
+      - id: G2
+        question: Période couverte par les exports (idéalement ≥ 3 mois)
+        transform: text
+      - id: G3
+        question: Format des fichiers (CSV, Excel) et noms des colonnes
+        transform: text
+      - id: G4
+        question: Modalités de pseudonymisation et circuit de validation (DPO, RSSI)
+        transform: text
+
+  - id: H
+    title: Organisation, irritants et sécurité
+    questions:
+      - id: H1
+        question: Doubles saisies, contournements ou outils abandonnés connus
+        help: "Précieux pour valider que le jumeau reproduit bien les problèmes réels."
+        transform: text
+      - id: H2
+        question: Pics d'activité connus (changement d'équipe, début de vacation, jours particuliers)
+        transform: text
+      - id: H3
+        question: Exigences PSSI / homologation de sécurité applicables aux nouveaux logiciels
+        transform: text
+      - id: H4
+        question: Contacts référents (DSI, RSSI, DPO, cadre de bloc, DIM)
+        transform: text

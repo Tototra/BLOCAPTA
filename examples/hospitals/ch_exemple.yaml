@@ -1,0 +1,29 @@
+# Exemple de configuration d'un établissement : on hérite de l'archétype
+# et on ne décrit que ce qui diffère.
+id: ch_exemple
+name: Centre hospitalier d'exemple
+extends: ch_general
+
+metadata:
+  finess: "000000000"
+
+resources:
+  salle_bloc: { count: 7 }
+  chirurgien: { count: 9 }
+  poste_bloc: { count: 4 }   # moins de postes que de salles : partage des postes
+
+pathways:
+  - id: chirurgie_programmee
+    arrivals:
+      per_day: { dist: poisson, lam: 24 }
+    steps:
+      - id: intervention
+        documentation:
+          - kind: tracabilite_actes
+            role: chirurgien
+            current_system: dpi
+            # répartition observée par le DIM
+            items: { dist: empirical, values: { 1: 0.38, 2: 0.37, 3: 0.18, 4: 0.07 } }
+            time_per_entry_min: { dist: triangular, low: 0.5, mode: 1.0, high: 2.0 }
+            time_per_item_min: { dist: triangular, low: 0.3, mode: 0.5, high: 1.0 }
+            workstation: poste_bloc

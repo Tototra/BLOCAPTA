@@ -1,0 +1,85 @@
+# Archétype : centre hospitalier universitaire (~1 500 lits).
+# Hérite du CH général et ajoute un service d'urgences ouvert 24h/24.
+id: archetype_chu
+name: Centre hospitalier universitaire (archétype)
+archetype: chu
+extends: ch_general
+metadata:
+  type: CHU
+  lits: 1500
+
+services:
+  bloc:
+    closing_time: "20:00"
+  urgences:
+    label: Service d'accueil des urgences
+    kind: urgences
+    beds: 40
+
+resources:
+  brancardier: { count: 10 }
+  salle_bloc: { count: 22, shift: { start: "07:30", end: "20:00", weekdays: [0, 1, 2, 3, 4] } }
+  chirurgien: { count: 26 }
+  anesthesiste: { count: 22 }
+  ibode: { count: 34 }
+  lit_sspi: { count: 28 }
+  poste_bloc: { count: 22 }
+  ioa:
+    label: Infirmiers organisateurs de l'accueil
+    service: urgences
+    count: 2
+  medecin_urgences:
+    label: Médecins urgentistes
+    service: urgences
+    count: 6
+  box_urgences:
+    label: Box d'examen
+    kind: salle
+    service: urgences
+    count: 18
+  poste_urgences:
+    label: Postes informatiques des urgences
+    kind: poste
+    service: urgences
+    count: 10
+
+pathways:
+  - id: chirurgie_programmee
+    arrivals:
+      per_day: { dist: poisson, lam: 70 }
+  - id: passage_urgences
+    label: Passage aux urgences
+    service: urgences
+    arrivals:
+      per_day: { dist: poisson, lam: 190 }
+      window: { start: "00:00", end: "23:59", weekdays: [0, 1, 2, 3, 4, 5, 6] }
+      hourly_profile: [2, 2, 1, 1, 1, 1, 2, 3, 5, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 5, 5, 4, 3, 3]
+    steps:
+      - id: accueil_ioa
+        label: Accueil et tri IOA
+        duration_min: { dist: lognormal, mean: 8, sd: 4 }
+        resources: { ioa: 1 }
+        documentation:
+          - kind: tri_ioa
+            role: ioa
+            current_system: dpi
+            items: { dist: fixed, value: 1 }
+            time_per_entry_min: { dist: triangular, low: 1, mode: 2, high: 4 }
+            time_per_item_min: { dist: fixed, value: 0.5 }
+            workstation: poste_urgences
+      - id: prise_en_charge_medicale
+        label: Examen médical
+        duration_min: { dist: lognormal, mean: 35, sd: 20 }
+        resources: { medecin_urgences: 1, box_urgences: 1 }
+        documentation:
+          - kind: observation_medicale
+            role: medecin_urgences
+            current_system: dpi
+            items: { dist: empirical, values: { 1: 0.6, 2: 0.3, 3: 0.1 } }
+            time_per_entry_min: { dist: triangular, low: 2, mode: 4, high: 8 }
+            time_per_item_min: { dist: triangular, low: 1, mode: 2, high: 4 }
+            workstation: poste_urgences
+      - id: surveillance
+        label: Examens complémentaires et surveillance
+        duration_min: { dist: lognormal, mean: 180, sd: 120 }
+        resources: { box_urgences: 1 }

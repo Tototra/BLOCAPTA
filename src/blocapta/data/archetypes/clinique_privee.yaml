@@ -1,0 +1,61 @@
+# Archétype : clinique privée MCO (~150 lits), forte part d'ambulatoire.
+id: archetype_clinique_privee
+name: Clinique privée MCO (archétype)
+archetype: clinique_privee
+extends: ch_general
+metadata:
+  type: clinique privée
+  lits: 150
+
+services:
+  bloc:
+    closing_time: "18:00"
+  ambulatoire:
+    label: Unité de chirurgie ambulatoire
+    kind: hospitalisation
+    beds: 30
+
+resources:
+  brancardier: { count: 3 }
+  salle_bloc: { count: 6, shift: { start: "07:30", end: "18:00", weekdays: [0, 1, 2, 3, 4] } }
+  chirurgien: { count: 7 }
+  anesthesiste: { count: 6 }
+  ibode: { count: 8 }
+  lit_sspi: { count: 8 }
+  poste_bloc: { count: 6 }
+
+pathways:
+  - id: chirurgie_programmee
+    arrivals:
+      per_day: { dist: poisson, lam: 14 }
+  - id: chirurgie_ambulatoire
+    label: Chirurgie ambulatoire
+    service: ambulatoire
+    arrivals:
+      per_day: { dist: poisson, lam: 18 }
+      window: { start: "07:00", end: "13:00", weekdays: [0, 1, 2, 3, 4] }
+    steps:
+      - id: brancardage_aller
+        duration_min: { dist: lognormal, mean: 12, sd: 5 }
+        resources: { brancardier: 1 }
+      - id: intervention
+        label: Intervention courte
+        duration_min: { dist: lognormal, mean: 45, sd: 20 }
+        resources: { salle_bloc: 1, chirurgien: 1, anesthesiste: 1, ibode: 1 }
+        documentation:
+          - kind: tracabilite_actes
+            role: chirurgien
+            current_system: dpi
+            items: { dist: empirical, values: { 1: 0.7, 2: 0.25, 3: 0.05 } }
+            time_per_entry_min: { dist: triangular, low: 0.5, mode: 1.0, high: 2.0 }
+            time_per_item_min: { dist: triangular, low: 0.3, mode: 0.5, high: 1.0 }
+            workstation: poste_bloc
+      - id: sspi
+        duration_min: { dist: lognormal, mean: 40, sd: 15 }
+        resources: { lit_sspi: 1 }
+      - id: brancardage_retour
+        duration_min: { dist: lognormal, mean: 12, sd: 5 }
+        resources: { brancardier: 1 }
+
+information_system:
+  hosting_policy: cloud_hds
