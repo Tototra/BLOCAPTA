@@ -1,78 +1,91 @@
 # Architecture détaillée
 
-## Flux d'un audit
+## Chaîne d'agents
 
-1. **Fiche technique** (`spec/`) : le document de l'éditeur est lu. S'il est structuré (YAML/JSON conforme à
-   `SpecSheet`), il est utilisé tel quel ; sinon le LLM d'extraction remplit le schéma avec une sortie JSON
-   contrainte (`format` d'Ollama) puis revalidée par Pydantic. Les critères de `data/criteria.yaml` sont évalués
-   par un moteur de règles **déterministe**. Un critère bloquant en échec stoppe l'audit avant la simulation.
-2. **Conversion** : `SoftwareModel.from_spec_sheet` traduit la fiche en modèle de simulation (points de
-   contact, interfaces, licence, plage de disponibilité). Le modèle peut aussi être écrit à la main.
-3. **Simulation** (`simulation/`) : deux scénarios avec les mêmes arrivées de patients (flux aléatoires séparés) :
-   situation actuelle et avec logiciel. N réplications, intervalles de confiance à 95 % (loi de Student).
-4. **Analyse statique** : connecteurs manquants, SSO, tâches non modélisées, cardinalité moyenne.
-5. **Score** (`reporting/scoring.py`) : 100 moins des pénalités explicites (fiche incomplète, frictions selon
-   leur gravité, constats statiques non déjà mesurés). Plafonné à 30 si la fiche n'est pas admissible.
-6. **Rédaction** : le LLM reçoit uniquement les faits JSON ; chaque nombre de son texte est vérifié
-   (`factcheck.py`), sinon repli sur la rédaction déterministe.
+| Agent | Rôle | Module | Peut arrêter la chaîne |
+|---|---|---|---|
+| 1. Contrôle de complétude | La fiche suffit-elle pour analyser ? | `spec/completeness.py` + `data/grille_completude.yaml` | oui (`NON_ANALYSABLE`) |
+| — Grille réglementaire | Exigences Go/NoGo et selon le périmètre | `spec/rules.py` + `data/criteria.yaml` | non (score plafonné à 40 si `NO_GO`) |
+| 2. Normalisation | Fiche → paramètres de simulation | `spec/normalize.py` | non |
+| 3. Simulation | Scénarios sans / avec outil | `simulation/engine.py`, `montecarlo.py` | non |
+| 4. Effets humains | Confiance, adoption, apprentissage, pannes | `simulation/human.py` | non |
+| 5. Rapport | Score, confiance, vigilance, hypothèses | `reporting/` | non |
 
-## Le moteur de simulation
+Orchestration : `pipeline.run_audit`.
 
-- **Temps** : minutes ; t = 0 correspond à un lundi 00:00.
-- **Ressources** : un `PriorityResource` SimPy par pool. Hors horaires, un processus « jeton » réserve toutes
-  les unités avec une priorité supérieure. Une personne en cours de tâche termine d'abord (pas de
-  préemption), ce qui produit naturellement les dépassements horaires.
-- **Parcours** : suite d'étapes. Chaque étape acquiert ses ressources (ordre alphabétique pour éviter les
-  interblocages), dure selon sa loi, puis libère ses ressources. Exception : le rôle qui documente reste
-  mobilisé pendant la documentation.
-- **Documentation** : nombre d'éléments `n` tiré de la loi `items`.
-  - Situation actuelle : `temps_par_saisie + n × temps_par_élément`.
-  - Avec logiciel : `ceil(n / max_par_saisie)` saisies, puis vérification des rôles, des interfaces (double
-    saisie si le système actuel ne reçoit pas les données), du poste requis, des horaires et de la licence.
-- **Frictions** : chaque écart produit un `FrictionEvent` (temps perdu, éléments à risque). Elles sont ensuite
-  agrégées par type, parcours, étape et rôle, avec la part des tâches touchées et une gravité.
+## Agent 1
 
-### Règles de gravité
+- 40 champs (25 O, 12 R, 3 F) ; statuts Complet, Partiel, Vide, Inconnu, Incohérent.
+- Champs critiques (`B2.acteurs`, `B4.etapes`, `B6.mode_degrade`, `B8.risques_patient`) : « Partiel » bloque.
+- Contrôles de cohérence : rôles du bloc 4 présents au bloc 2 (et inversement pour les utilisateurs),
+  étapes dans le périmètre, durées sourcées, gain > 50 % sans mesure sur site ni étude → « affirmation non
+  étayée », promesses commerciales, disponibilité de 100 %, données personnelles (verdict
+  `NON_ANALYSABLE`, donnée non recopiée).
+- Verdict et confiance selon les règles de la spécification ; 10 questions au plus, classées ; hypothèses ;
+  fiche normalisée ; résumé lisible.
+- Un LLM peut signaler des champs flous, des affirmations et des données personnelles ; il ne peut jamais
+  rendre « complet » un champ vide.
 
-| Gravité | Condition (par jour d'activité) |
+## Moteur de simulation
+
+- **Temps** en minutes, t = 0 un lundi à 0 h. Flux aléatoires séparés (arrivées, durées, documentation,
+  ressources, annulations, facteur humain) : les scénarios sans et avec outil partagent les mêmes patients.
+- **Ressources** : un `PriorityResource` par pool. La disponibilité au cours du temps (équipes par plage,
+  ouverture aléatoire des salles, effectifs liés aux salles ouvertes via `follows`) est imposée par des
+  jetons prioritaires ; une personne en cours de tâche termine d'abord (dépassement naturel).
+- **Acquisition atomique** : une étape ne prend ses ressources que lorsqu'elles sont toutes disponibles,
+  ce qui supprime les interblocages (attente circulaire). Contrôle d'ubiquité à chaque acquisition.
+- **Étapes** : durée propre ou part de la durée de salle du cas (`duration_share`) ; ressources transmises
+  à l'étape suivante (`carry`, ex. salle et IADE de l'installation au réveil) ; étapes détachées
+  (`detached`, ex. bionettoyage pendant le transfert en SSPI) ; ressources optionnelles (équipements).
+- **Programme opératoire** (`Hospital.programme`) : chaque jour, chaque salle ouverte reçoit une spécialité
+  et est remplie jusqu'à la fin de vacation ; patient appelé avant l'heure prévue ; pas d'entrée en salle
+  avant l'heure prévue ; règle de fin (déprogrammation après 18 h). Urgences 24h/24, prioritaires.
+- **Documentation** : à la fin d'une étape, un rôle documente n éléments. Avec le logiciel :
+  `ceil(n / max_par_saisie)` saisies, vérification du périmètre, des rôles, des interfaces (double saisie
+  si le système actuel ne reçoit pas les données ; un support papier n'en demande pas), du poste requis,
+  des horaires, de la licence, des pannes, de l'apprentissage et de la confiance (contournement).
+
+### Frictions
+
+| Type | Exemple |
 |---|---|
-| critique | ≥ 1 h perdue/jour, ou ≥ 1 élément à risque/jour, ou interopérabilité touchant ≥ 50 % des tâches, ou cardinalité touchant ≥ 30 % des tâches |
-| majeure | ≥ 15 min perdues/jour, ou ≥ 20 % des tâches, ou des éléments à risque, ou toute friction de couverture ou d'interopérabilité |
-| mineure | ≥ 2 % des tâches |
-| info | le reste |
+| `cardinalite` | 3 actes à tracer, 1 acte par saisie → 2 saisies de plus, risque d'oubli |
+| `interoperabilite` | pas de flux vers le logiciel de bloc → double saisie |
+| `couverture` | le rôle qui fait la tâche n'est pas prévu par le logiciel |
+| `ressource` | poste fixe requis absent, attente d'un poste |
+| `disponibilite` | tâche hors de la plage de service du logiciel |
+| `charge` | plus d'utilisateurs simultanés que la licence |
+| `panne` | mode dégradé puis resaisie |
+| `adoption` | outil contourné faute de confiance |
 
-Ces seuils sont dans `simulation/montecarlo.py::_severity` et sont faits pour être ajustés avec les DSI.
+Les frictions sont agrégées par (type, tâche, métier) sur l'ensemble des parcours. Gravité :
+critique si ≥ 1 h perdue ou ≥ 1 élément à risque par jour, interopérabilité sur ≥ 50 % des tâches ou
+cardinalité sur ≥ 30 % ; majeure si ≥ 15 min par jour, ≥ 20 % des tâches, éléments à risque, ou
+couverture / interopérabilité ; mineure si ≥ 2 % des tâches ; info sinon (`montecarlo._severity`).
 
-## Calibration et validation du jumeau
+## Bloc de référence
 
-`calibration/` reconstruit la variante principale d'un parcours à partir d'un journal (une ligne par
-événement), ajuste une loi sur chaque transition (lognormale, gamma, exponentielle, normale ; choix par AIC ;
-test de Kolmogorov-Smirnov rapporté), estime les arrivées (loi de comptage journalière, profil horaire, jours
-actifs). `simulation/validation.py` compare ensuite la simulation de l'existant aux valeurs observées :
-le jumeau est considéré valide si l'écart reste sous la tolérance (10 % par défaut).
+`reference.build_reference_bloc` combine les statistiques agrégées (`data/reference/oproom_stats.json`) et
+les effectifs (`data/reference/effectifs_bloc.yaml`) : 10 salles, 20 parcours (programmé et urgences par
+spécialité), phases d'intervention, pré-anesthésie, SSPI, équipements partagés, tâches de traçabilité
+(actes et dispositifs médicaux). Le fichier généré `data/archetypes/bloc_reference.yaml` sert d'archétype :
+un autre bloc s'en hérite avec `extends: bloc_reference`.
 
-> Attention : les durées observées entre deux événements incluent déjà l'attente des ressources. Si l'on
-> ajoute des ressources contraintes à une étape calibrée, la validation peut montrer une durée simulée trop
-> longue. C'est précisément ce que la validation sert à révéler.
+## Configuration multi-établissements
 
-## Configurateur multi-établissements
-
-- **Archétypes** (`data/archetypes/`) et héritage `extends` : fusion récursive des dictionnaires, listes
-  fusionnées sur l'`id`, suppression via `{__delete__: true}`.
-- **JSON Patch** avec sélecteurs lisibles `/pathways[id=…]/steps[id=…]`.
-- **LLM configurateur** : propose des opérations (valeurs encodées en JSON pour rester compatibles avec les
-  sorties structurées), relancé automatiquement en cas d'échec de validation, avec des hypothèses explicites.
-  Il ne touche jamais au code du moteur.
-- **Questionnaire DSI** (`data/questionnaire_dsi.yaml`) : chaque question peut cibler un chemin de
-  configuration avec une transformation (`poisson`, `lognormal`, `empirical`, `time_window`…). Les réponses en
-  texte libre sont confiées au LLM configurateur.
+- Archétypes (`data/archetypes/`) et héritage `extends` ; fusion récursive, listes fusionnées sur l'`id`.
+- JSON Patch avec sélecteurs : `[id=…]`, `[clé=valeur]`, `[*]`, `[*clé=valeur]`.
+- LLM configurateur : consigne en langage naturel → patch revalidé, diff à valider.
+- Questionnaire DSI relié à la configuration (`data/questionnaire_dsi.yaml`).
 
 ## Points d'extension
 
 | Besoin | Où |
 |---|---|
-| Nouveau type de friction | `models/results.py::FrictionType` + `simulation/engine.py::_document` |
-| Nouveau critère de fiche | `data/criteria.yaml` |
-| Nouvelle loi de probabilité | `models/distributions.py` (+ union `Distribution`) |
-| Autre fournisseur LLM | implémenter le protocole `llm.client.LLMClient` |
-| Nouvel archétype | `data/archetypes/<nom>.yaml` |
+| Nouveau champ de fiche | `models/fiche.py` + `data/grille_completude.yaml` |
+| Nouveau critère réglementaire | `data/criteria.yaml` |
+| Nouveau type de friction | `models/results.py` + `simulation/engine.py::_document` |
+| Nouveau mécanisme humain | `simulation/human.py` + `models/scenario.py` |
+| Nouvelle loi de probabilité | `models/distributions.py` |
+| Autre fournisseur LLM | protocole `llm.client.LLMClient` |

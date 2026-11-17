@@ -67,7 +67,8 @@ def run_audit(
     sim = None
     hypotheses = list(validation.completude.hypotheses_necessaires)
     if validation.admissible or simulate_even_if_not_analysable:
-        software, hyps = fiche_to_software(validation.fiche, h.documentation_kinds())
+        specialties = {p.specialty for p in h.pathways if p.specialty}
+        software, hyps = fiche_to_software(validation.fiche, h.documentation_kinds(), specialties)
         software = software_override or software
         hypotheses += hyps
         sc = scenario or default_scenario(validation.fiche)

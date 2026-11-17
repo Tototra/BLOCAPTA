@@ -449,42 +449,49 @@ resources:
     service: bloc
     calibration: mesuré (OPROOM)
     shifts:
-    - start: 08:00
+    - label: vacation
+      start: 08:00
       end: '18:30'
       count: 10
       weekdays:
       - 0
       availability: 0.5995
-    - start: 08:00
+    - label: vacation
+      start: 08:00
       end: '18:30'
       count: 10
       weekdays:
       - 1
       availability: 0.5624
-    - start: 08:00
+    - label: vacation
+      start: 08:00
       end: '18:30'
       count: 10
       weekdays:
       - 2
       availability: 0.662
-    - start: 08:00
+    - label: vacation
+      start: 08:00
       end: '18:30'
       count: 10
       weekdays:
       - 3
       availability: 0.816
-    - start: 08:00
+    - label: vacation
+      start: 08:00
       end: '18:30'
       count: 10
       weekdays:
       - 4
       availability: 0.5466
-    - start: '18:30'
+    - label: garde
+      start: '18:30'
       end: 08:00
       count: 1
       weekdays: *id005
       availability: 1.0
-    - start: 08:00
+    - label: garde
+      start: 08:00
       end: '18:30'
       count: 1
       weekdays:

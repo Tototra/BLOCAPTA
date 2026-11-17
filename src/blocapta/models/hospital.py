@@ -63,6 +63,7 @@ ResourceKind = Literal["humain", "salle", "poste", "equipement"]
 class ShiftCount(BaseModel):
     """Une équipe sur une plage horaire : ``count`` personnes présentes de ``start`` à ``end``."""
 
+    label: str | None = Field(default=None, description="Étiquette (vacation, garde, renfort…)")
     start: str
     end: str
     count: int = Field(ge=0)

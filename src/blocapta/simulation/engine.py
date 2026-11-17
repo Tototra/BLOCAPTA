@@ -466,7 +466,7 @@ class Simulation:
             )
             needed = dict(step.resources)
             for rname, prob in step.optional_resources.items():
-                if self.rng_res.random() < prob:
+                if rname in self.pools and self.rng_res.random() < prob:
                     needed[rname] = needed.get(rname, 0) + 1
 
             if step.detached:
@@ -620,6 +620,8 @@ class Simulation:
         current_time = task.time_per_entry_min.sample(rng) + sum(task.time_per_item_min.sample(rng) for _ in range(n))
         tp = self.touchpoints.get(task.kind)
         use_sw = tp is not None and tp.replaces_current
+        if use_sw and tp.specialties and pw.specialty not in tp.specialties:
+            use_sw = False  # hors du périmètre déclaré dans la fiche
         ws_pool = task.workstation
         entries = 1
         hl = self.human

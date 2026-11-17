@@ -43,6 +43,9 @@ class HumanFactorConfig(BaseModel):
     outage_team_outcome: float = Field(
         default=0.0, ge=0, le=1, description="Résultat perçu d'une panne par toute l'équipe présente (0 = échec)"
     )
+    non_user_outage_outcome: float = Field(
+        default=0.5, ge=0, le=1, description="Perception d'une panne par un non-utilisateur (0,5 ≈ neutre)"
+    )
     support_outage_outcome: float = Field(
         default=0.4, ge=0, le=1, description="Résultat perçu d'une panne prise en charge par le support sur site (à calibrer)"
     )

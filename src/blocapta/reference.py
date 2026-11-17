@@ -119,13 +119,13 @@ def build_reference_bloc(stats: dict | None = None, staffing: dict | None = None
             # ouverture corrélée au volume du jour (le programme suit les salles ouvertes)
             *[
                 {
-                    "start": rh["start"], "end": rh["end"], "count": infra["rooms"], "weekdays": [wd],
+                    "label": "vacation", "start": rh["start"], "end": rh["end"], "count": infra["rooms"], "weekdays": [wd],
                     "availability": round(min(1.0, open_rate * weekday_factors[wd]), 4),
                 }
                 for wd in weekdays
             ],
-            {"start": rh["end"], "end": rh["start"], "count": infra["night_rooms"], "weekdays": all_days, "availability": 1.0},
-            {"start": rh["start"], "end": rh["end"], "count": infra["night_rooms"], "weekdays": [5, 6], "availability": 1.0},
+            {"label": "garde", "start": rh["end"], "end": rh["start"], "count": infra["night_rooms"], "weekdays": all_days, "availability": 1.0},
+            {"label": "garde", "start": rh["start"], "end": rh["end"], "count": infra["night_rooms"], "weekdays": [5, 6], "availability": 1.0},
         ],
     }
     resources["lit_sspi"] = {"label": "Lits de SSPI", "kind": "salle", "service": "bloc", "count": infra["sspi_beds"]}

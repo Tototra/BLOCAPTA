@@ -1,66 +1,70 @@
 # BLOCAPTA
 
-**Jumeau numérique hospitalier pour auditer la compatibilité d'un logiciel _avant_ son déploiement.**
+**Jumeau numérique de bloc opératoire pour tester un logiciel _avant_ de le déployer.**
 
-Un éditeur propose un logiciel à un hôpital. Plutôt que de découvrir les problèmes après l'installation,
-la DSI le fait passer dans une simulation de son établissement et obtient un rapport chiffré : où le logiciel
-s'intègre bien, où il crée des frictions, combien de temps les équipes perdent ou gagnent, ce qu'il faut exiger
-de l'éditeur.
+Aujourd'hui, un outil numérique arrive au bloc sans avoir été essayé sur l'organisation réelle. Il peut
+ralentir les équipes, les surcharger ou créer de nouveaux risques, et l'on ne s'en aperçoit qu'une fois
+l'outil en place. Blocapta permet à un bloc de répondre, avant d'acheter ou de déployer un outil, à trois
+questions : **que va-t-il changer, pour qui, et quels risques crée-t-il ?**
 
 > Cas d'origine : un outil de traçabilité qui n'enregistre **qu'un acte par saisie**, déployé auprès d'une
-> chirurgienne qui réalise **plusieurs actes par intervention**. BLOCAPTA détecte ce type d'écart en simulant
-> l'activité réelle du bloc. Cet exemple est fourni dans `examples/`.
+> chirurgienne qui réalise **plusieurs actes par intervention**. Blocapta détecte ce type d'écart en simulant
+> l'activité réelle du bloc (exemple `examples/fiches/archivactes.yaml`).
+
+Blocapta aide à décider : il ne remplace ni l'avis des soignants ni un essai réel en conditions contrôlées.
 
 ---
 
-## Architecture
+## La chaîne d'analyse
 
 ```mermaid
 flowchart LR
-    F[Fiche technique éditeur<br>PDF / texte / YAML] --> A[A. Validation<br>LLM extraction + règles]
-    Q[Questionnaire DSI] --> B
-    L[Logs horodatés<br>brancardage, bloc…] --> CAL[Calibration<br>process mining]
-    CAL --> B[B. Modèle de l'hôpital<br>YAML déclaratif + archétypes]
-    E[E. LLM configurateur<br>langage naturel → patch] --> B
-    A --> C[C. Modèle du logiciel<br>points de contact, contraintes]
-    B --> D[D. Simulation<br>événements discrets SimPy<br>baseline vs logiciel]
-    C --> D
-    D --> R[Résultats structurés<br>KPI, frictions, IC 95 %]
-    R --> S[Score déterministe]
-    R --> N[LLM de rédaction<br>+ vérification des chiffres]
-    S --> RAP[Rapport d'audit<br>Markdown / HTML / JSON]
-    N --> RAP
+    F[Fiche logiciel<br>template v0.1, 11 blocs] --> A1[Agent 1<br>contrôle de complétude]
+    F --> R[Grille réglementaire<br>Go / NoGo]
+    A1 -->|NON_ANALYSABLE| Q[Questions à l'auteur<br>aucun résultat chiffré]
+    A1 -->|analysable| A2[Agent 2<br>normalisation]
+    D[(Export OPROOM<br>agrégé, anonyme)] --> B[Bloc de référence<br>10 salles]
+    QD[Questionnaire DSI] --> B
+    B --> A3[Agent 3 — simulation<br>sans outil / avec outil]
+    A2 --> A3
+    S[Scénario<br>déploiement, pannes, sceptiques] --> A4
+    A3 --> A4[Agent 4<br>effets humains]
+    A4 --> A5[Agent 5<br>rapport]
+    R --> A5
+    A5 --> OUT[Score, confiance,<br>points de vigilance, hypothèses]
 ```
 
-**Principe directeur : les LLM ne simulent rien et n'inventent aucun chiffre.** Ils traduisent (document →
-JSON, consigne → patch de configuration, résultats → texte). Le cœur est un moteur de simulation déterministe
-et reproductible (graine fixée). Chaque nombre écrit par le LLM est vérifié contre les résultats ; en cas
-d'écart, le rapport bascule sur une rédaction déterministe.
+**Principe directeur : les LLM ne simulent rien et n'inventent aucun chiffre.** Ils lisent une fiche (PDF,
+Word, texte → JSON), proposent des modifications de configuration et rédigent le rapport. Le cœur est un
+moteur de simulation déterministe et reproductible (graine fixe, mêmes patients dans les deux scénarios).
+Chaque nombre écrit par un LLM est vérifié contre les résultats de simulation.
 
-| Brique | Module | Rôle |
+| Étape | Module | Ce qu'elle fait |
 |---|---|---|
-| A. Validation de la fiche | `blocapta.spec` | Extraction LLM → `SpecSheet`, critères YAML (bloquant / majeur / mineur), questions à l'éditeur |
-| B. Modèle de l'hôpital | `blocapta.models.hospital`, `blocapta.configurator` | Ressources, horaires, parcours, tâches de documentation, SI ; héritage d'archétypes |
-| Calibration | `blocapta.calibration` | Logs horodatés → variantes, durées ajustées (AIC, KS), arrivées, validation du jumeau |
-| C. Modèle du logiciel | `blocapta.models.software` | Points de contact (tâche, rôles, éléments max par saisie, poste requis…), interfaces, licence |
-| D. Simulation | `blocapta.simulation` | SimPy, ressources soumises à horaires, frictions, Monte Carlo, comparaison avec IC |
-| E. Configurateur | `blocapta.configurator` | JSON Patch proposé par le LLM, revalidé, diff pour validation humaine |
-| Rapport | `blocapta.reporting` | Score explicable, faits, rédaction vérifiée, rendu Markdown/HTML |
-| Interfaces | `blocapta.api`, `blocapta.cli` | API REST FastAPI (`/docs`), CLI `blocapta` |
+| Fiche logiciel | `models/fiche.py` | Format machine du template v0.1 : identité, contexte, acteurs, périmètre, processus avant/après, données, fiabilité, déploiement, risques, preuves, indicateurs |
+| Agent 1 | `spec/completeness.py` | Grille de 40 champs (25 O, 12 R, 3 F), 4 champs critiques, contrôles de cohérence, verdict `NON_ANALYSABLE` / `ANALYSABLE_AVEC_RESERVES` / `ANALYSABLE`, confiance, 10 questions priorisées |
+| Réglementaire | `data/criteria.yaml` | RGPD + AIPD, HDS si hébergé dehors, traçabilité des accès, INS, TLS/RBAC/flux, PCA/PRA, CE si DM, interopérabilité |
+| Agent 2 | `spec/normalize.py` | Bloc 4 → points de contact du jumeau ; incertitude selon le niveau de preuve ; périmètre ; hypothèses tracées |
+| Bloc de référence | `reference.py`, `data/reference/` | 10 salles, effectifs et horaires réels, équipements, durées par spécialité, programme opératoire, urgences |
+| Agent 3 | `simulation/engine.py` | Simulation à événements discrets (SimPy) : une personne à un seul endroit, MAR limité à 2 patients, pré-anesthésie, bionettoyage, SSPI, règle de fin, frictions |
+| Agent 4 | `simulation/human.py` | Confiance par soignant, aversion à la perte, influence des collègues, apprentissage, pannes, contournement |
+| Agent 5 | `reporting/` | Score explicable, niveau de confiance, points de vigilance, hypothèses, paramètres à calibrer, rédaction vérifiée |
 
-Détails : [`docs/architecture.md`](docs/architecture.md) · format des données : [`docs/donnees.md`](docs/donnees.md)
-· choix du modèle LLM : [`docs/modeles_llm.md`](docs/modeles_llm.md)
+### Fidélité au bloc réel
 
-### Frictions détectées
+Le bloc simulé **sans outil** retrouve les chiffres de l'export OPROOM (janvier à octobre 2026) à moins de
+10 % près — verdict **GO** du test n° 1 du cahier des charges :
 
-| Type | Exemple |
-|---|---|
-| `cardinalite` | 3 actes à tracer, le logiciel n'en accepte qu'1 par saisie → 2 saisies de contournement, risque d'oubli |
-| `interoperabilite` | Pas de connecteur vers le DPI → double saisie |
-| `couverture` | Le rôle qui fait la tâche (ex. IBODE) n'est pas prévu par le logiciel |
-| `ressource` | Poste fixe requis alors que le lieu n'en a pas, ou attente d'un poste partagé |
-| `disponibilite` | Tâche réalisée hors de la plage de service du logiciel |
-| `charge` | Plus d'utilisateurs simultanés que la licence ne le permet |
+| Indicateur | Réel | Simulé (IC 95 %) |
+|---|---:|---:|
+| Interventions réalisées par jour ouvré | 32,4 | 32,3 [31,5 ; 33,2] |
+| Taux d'annulation | 15,8 % | 16,2 % |
+| Taux d'occupation des salles | 47 % | 50,1 % |
+| Heure du premier cas | 8 h 40 | 8 h 30 |
+| Durées médianes (8 spécialités) | 17 à 113 min | toutes à moins de 5 % |
+| Contrôle d'ubiquité, durées négatives | — | 0 |
+
+Détail et méthode : [`docs/fidelite.md`](docs/fidelite.md).
 
 ---
 
@@ -69,88 +73,94 @@ Détails : [`docs/architecture.md`](docs/architecture.md) · format des données
 ```bash
 git clone https://github.com/Tototra/BLOCAPTA.git && cd BLOCAPTA
 python -m venv .venv && source .venv/bin/activate
-make install          # pip install -e ".[dev,pdf]"
+make install        # pip install -e ".[dev,pdf]"
 make test
-make demo             # démo complète sans LLM → out/rapport_audit.md et .html
+make demo           # fidélité + agent 1 + deux audits complets, sans LLM → out/
+make scenarios      # les scénarios fil rouge du cahier des charges
 ```
+
+Exemples de rapports produits : [`docs/exemples/`](docs/exemples/).
 
 ### Avec Ollama (LLM local)
 
 ```bash
-# 1. Installer Ollama : https://ollama.com/download
-ollama pull qwen3:8b
-cp .env.example .env  # choisir les modèles
-make demo-llm         # extraction depuis une brochure texte + rédaction LLM
+ollama pull qwen3:8b            # https://ollama.com/download
+cp .env.example .env
+make demo-llm                   # extraction d'une brochure en texte libre + rédaction du rapport
 ```
 
-Ou tout en conteneurs :
-
-```bash
-docker compose up -d --build   # API sur http://localhost:8000/docs, Ollama + téléchargement du modèle
-```
+Ou tout en conteneurs : `docker compose up -d --build` (API sur http://localhost:8000/docs).
+Choix du modèle : [`docs/modeles_llm.md`](docs/modeles_llm.md).
 
 ---
 
 ## Utilisation
 
 ```bash
-# 1. Remettre le questionnaire à la DSI
-blocapta template -o questionnaire_dsi.md --answers reponses.yaml
+# 1. L'éditeur (ou le cadre) remplit la fiche logiciel
+blocapta fiche-template -o fiche.yaml
+blocapta fiche fiche.yaml --no-llm                  # agent 1 + Go/NoGo réglementaire
+blocapta fiche brochure.pdf --save-fiche fiche.yaml # extraction par LLM d'un document libre
 
-# 2. Construire la configuration de l'hôpital à partir des réponses
-blocapta apply-answers reponses.yaml -o hopital.yaml [--llm]
+# 2. Décrire le bloc de l'établissement (sinon : bloc de référence)
+blocapta template -o questionnaire.md --answers reponses.yaml
+blocapta apply-answers reponses.yaml -o mon_bloc.yaml
+blocapta configure mon_bloc.yaml "On ouvre une 11e salle le jeudi" --apply
+blocapta fidelite --hospital mon_bloc.yaml          # Stop/Go avant tout test de logiciel
 
-# 3. Calibrer les durées sur les exports horodatés, et vérifier que le jumeau colle à la réalité
-blocapta calibrate export_brancardage.csv --mapping mapping.yaml --hospital hopital.yaml -o parcours.yaml
-
-# 4. Ajuster la configuration en langage naturel (diff affiché, validation humaine)
-blocapta configure hopital.yaml "On ouvre 2 salles de plus le jeudi et les brancardiers passent en 2x12h"
-
-# 5. Valider une fiche technique éditeur
-blocapta validate-spec fiche_editeur.pdf --hospital hopital.yaml
-
-# 6. Audit complet
-blocapta audit hopital.yaml fiche_editeur.pdf --days 20 --replications 30 -o out/rapport.md
+# 3. Tester le logiciel
+blocapta simulate mon_bloc.yaml --software fiche.yaml --scenario examples/scenarios/panne_precoce.yaml
+blocapta audit mon_bloc.yaml fiche.yaml -o out/rapport.md      # rapport Markdown + HTML + JSON
 ```
 
-Autres commandes : `archetypes`, `resolve`, `simulate`, `generate-log`, `serve`, `config`. Aide : `blocapta --help`.
+Autres commandes : `reference` (reconstruire le bloc de référence), `calibrate`, `generate-log`,
+`archetypes`, `resolve`, `serve`, `config`. Aide : `blocapta --help`.
 
-### Adapter à un nouvel hôpital
+### Scénarios fil rouge (`examples/scenarios/`)
 
-1. Partir d'un archétype (`ch_general`, `chu`, `clinique_privee`) avec `extends:` et ne décrire que les différences.
-2. Appliquer les réponses au questionnaire (`apply-answers`).
-3. Calibrer sur les logs, valider le jumeau (`calibrate --hospital`) : écart ≤ 10 % sur la durée de parcours et
-   le volume journalier.
-4. Affiner par consignes en langage naturel (`configure`) : chaque modification est un patch versionnable.
-
-Ajouter un archétype = déposer un YAML dans `src/blocapta/data/archetypes/`.
-Ajouter un critère de fiche technique = éditer `src/blocapta/data/criteria.yaml`.
+| Scénario | Question | Ce que montre le jumeau |
+|---|---|---|
+| `deploiement_lundi_8h` | Effet du déploiement le premier mois ? | courbe d'apprentissage, temps de saisie qui baisse semaine après semaine |
+| `panne_precoce` / `_avec_support` | La confiance remonte-t-elle après une panne au 2e jour ? | chute durable sans support, remontée plus rapide avec support sur site |
+| `chirurgien_sceptique` / `champion` | La réticence d'un senior se propage-t-elle ? | l'équipe est freinée ; un champion compense en partie |
 
 ---
+
+## Données et confidentialité
+
+- **Aucune donnée de patient.** L'export OPROOM n'est **jamais** versionné : `tools/oproom_aggregate.py`
+  supprime les colonnes nominatives (chirurgiens, anesthésistes), filtre les valeurs aberrantes et ne
+  produit que des statistiques agrégées (`data/reference/oproom_stats.json`).
+- L'agent 1 bloque toute fiche contenant une donnée personnelle, sans la recopier.
+- Les LLM tournent en local (Ollama) : rien ne sort de l'infrastructure.
+- Chaque paramètre non mesuré est marqué **« à calibrer »** et listé dans les rapports.
+
+Détails : [`docs/donnees.md`](docs/donnees.md) · Architecture : [`docs/architecture.md`](docs/architecture.md) ·
+Facteur humain : [`docs/facteur_humain.md`](docs/facteur_humain.md)
 
 ## Structure du dépôt
 
 ```
 src/blocapta/
-  models/          schémas Pydantic (lois, hôpital, logiciel, fiche technique, résultats)
-  spec/            validation des fiches techniques (règles + extraction LLM)
-  calibration/     journaux d'événements, process mining, ajustement de lois
-  simulation/      moteur SimPy, Monte Carlo, analyse statique, validation du jumeau
-  configurator/    archétypes, héritage, JSON Patch, LLM configurateur, questionnaire
-  reporting/       score, faits, rédaction vérifiée, rendu
-  llm/             client Ollama (sorties structurées), FakeLLM
-  api/ cli.py      interfaces
-  data/            archétypes, critères, questionnaire, gabarits de rapport
-examples/          fiche ArchivActes, hôpital d'exemple, réponses au questionnaire
-tests/             tests unitaires et de bout en bout (sans LLM)
-docs/              architecture, données, modèles LLM
+  models/          hôpital, lois de probabilité, fiche logiciel, logiciel, scénario, résultats
+  spec/            agent 1 (complétude), grille réglementaire, agent 2 (normalisation), extraction
+  simulation/      moteur, facteur humain, Monte Carlo, fidélité
+  reference.py     construction du bloc de référence
+  configurator/    archétypes, héritage, patchs, LLM configurateur, questionnaire DSI
+  reporting/       score, faits, rédaction vérifiée, rendu Markdown / HTML
+  calibration/     journaux horodatés, process mining, ajustement de lois
+  llm/  api/  cli.py
+  data/            archétypes, référence agrégée, effectifs, grilles, questionnaire, gabarits
+examples/          fiches (ArchivActes, ScanTrace), scénarios, questionnaire
+tools/             agrégation anonyme de l'export OPROOM
+docs/              architecture, données, fidélité, facteur humain, modèles LLM, exemples
 ```
 
-## Limites actuelles et feuille de route
+## Limites et suite
 
-- Les valeurs des archétypes sont des ordres de grandeur **non calibrés** : elles doivent être remplacées par
-  les données de l'établissement.
-- Pas de préemption (une urgence ne déloge pas une intervention en cours) ni de priorités entre patients.
-- Les tâches de documentation sont modélisées en fin d'étape ; les tâches pendant l'étape restent à ajouter.
-- Prochaines étapes : parcours à variantes (routage probabiliste), mode « bac à sable » qui rejoue des messages
-  HL7/FHIR synthétiques vers le vrai logiciel, interface web, export PDF.
+- Paramètres humains (α, κ, confiance initiale) **à calibrer** : les résultats humains sont des tendances.
+- Les horodatages du parcours (pré-anesthésie, SSPI) sont presque vides dans l'export actuel : leurs durées
+  sont supposées. Le questionnaire (section G) liste les données à recueillir.
+- La définition OPROOM du taux d'occupation est à confirmer avec le cadre de bloc.
+- Prochaines étapes : planning réel des vacations, absentéisme et pauses, brancards en stock fini,
+  lits d'aval, tableau de bord interactif, relecture par 5 professionnels du bloc (test n° 3).

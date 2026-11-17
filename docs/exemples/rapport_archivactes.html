@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>Audit ArchivActes v2.3</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:1000px;margin:2rem auto;padding:0 1rem;color:#1d2433;line-height:1.5}
+h1{border-bottom:3px solid #2b6cb0;padding-bottom:.4rem} h2{margin-top:2rem;color:#2b6cb0}
+table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.9rem}
+th,td{border:1px solid #d5dbe5;padding:.4rem .6rem;text-align:left} th{background:#eef3fa}
+tr:nth-child(even) td{background:#fafbfd} em{color:#5a6475}
+</style></head><body>
+<h1>Rapport d&#x27;audit — ArchivActes v2.3</h1>
+<p><strong>Établissement :</strong> Bloc opératoire central de référence (10 salles, données OPROOM 2026)</p>
+<p><strong>Éditeur :</strong> MedTrace SAS (société fictive) · <strong>Type d&#x27;outil :</strong> Traçabilité des actes opératoires · <strong>Statut :</strong> À l&#x27;étude</p>
+<p><strong>Généré le :</strong> 2026-11-17 15:42 · rédaction : deterministe</p>
+<h2>Verdict</h2>
+<p><strong>Score de compatibilité : 40.0/100 — non déployable en l&#x27;état (exigence réglementaire obligatoire manquante)</strong></p>
+<p><strong>Niveau de confiance de l&#x27;analyse : FAIBLE</strong> · Fiche : ANALYSABLE_AVEC_RESERVES · Réglementaire : NO_GO</p>
+<p>ArchivActes v2.3 obtient un score de compatibilité de 40.0/100 (non déployable en l&#x27;état (exigence réglementaire obligatoire manquante)) pour Bloc opératoire central de référence (10 salles, données OPROOM 2026), avec un niveau de confiance faible. Exigence(s) réglementaire(s) obligatoire(s) non démontrée(s) : Conformité RGPD et analyse d&#x27;impact (AIPD) réalisée avant déploiement. La simulation couvre 28 jours d&#x27;activité et 10 réplications. Le temps total de documentation passe de 42.5 h à 92.9 h (+118.6 %). Facteur humain (scénario « Déploiement selon la fiche (lundi 8 h) ») : en fin de période, la confiance des utilisateurs « chirurgien » est de 0.47 sur 1. 2 point(s) de vigilance ont été identifiés.</p>
+<h2>Points de vigilance</h2>
+<h3>1. Interface manquante : double saisie — critique</h3>
+<ul>
+<li><strong>Constat :</strong> Aucun flux vers &#x27;logiciel_bloc&#x27; : double saisie. Concerne 99.1 % des tâches &#x27;tracabilite_actes&#x27; (25.5 occurrences par jour d&#x27;activité).</li>
+<li><strong>Impact :</strong> 0.91 h perdues par jour d&#x27;activité pour le rôle &#x27;chirurgien&#x27; (25.5 h sur 28 jours simulés).</li>
+<li><strong>Recommandation :</strong> Conditionner le déploiement au développement du connecteur manquant (via l&#x27;EAI).</li>
+</ul>
+<h3>2. Nombre d&#x27;éléments par saisie insuffisant — critique</h3>
+<ul>
+<li><strong>Constat :</strong> 4 éléments à documenter, 4 saisies (max 1 par saisie). Concerne 44.0 % des tâches &#x27;tracabilite_actes&#x27; (11.3 occurrences par jour d&#x27;activité).</li>
+<li><strong>Impact :</strong> 0.36 h perdues par jour d&#x27;activité pour le rôle &#x27;chirurgien&#x27; (10.0 h sur 28 jours simulés), 21.8 éléments à risque d&#x27;omission.</li>
+<li><strong>Recommandation :</strong> Exiger de l&#x27;éditeur la saisie de plusieurs éléments par fiche, ou chiffrer le temps perdu avant signature.</li>
+</ul>
+<h2>Indicateurs clés (moyennes sur 10 réplications de 28 jours)</h2>
+<table><thead><tr><th>Indicateur</th><th>Unité</th><th>Sans l&#x27;outil</th><th>Avec l&#x27;outil</th><th>Écart</th></tr></thead><tbody>
+<tr><td>Temps total consacré à la documentation</td><td>h</td><td>42.51</td><td>92.92</td><td>+118.6 %</td></tr>
+<tr><td>Temps moyen par tâche de documentation</td><td>min</td><td>2.43</td><td>5.37</td><td>+120.7 %</td></tr>
+<tr><td>Nombre total de saisies</td><td>saisies</td><td>1049.20</td><td>1482.10</td><td>+41.3 %</td></tr>
+<tr><td>Éléments potentiellement non documentés</td><td>éléments</td><td>0.00</td><td>21.80</td><td>+21.80</td></tr>
+<tr><td>Durée moyenne de parcours</td><td>min</td><td>257.37</td><td>267.67</td><td>+4.0 %</td></tr>
+<tr><td>Attente moyenne de ressources par étape</td><td>min</td><td>6.92</td><td>7.70</td><td>+11.3 %</td></tr>
+<tr><td>Taux d&#x27;occupation des salles (temps patient / temps d&#x27;ouverture)</td><td>%</td><td>52.06</td><td>52.18</td><td>+0.2 %</td></tr>
+<tr><td>Cas programmés sortant de salle après la fermeture</td><td>%</td><td>1.76</td><td>2.13</td><td>+21.4 %</td></tr>
+<tr><td>Cas déprogrammés le jour même (règle de fin)</td><td>cas</td><td>0.70</td><td>1.80</td><td>+157.1 %</td></tr>
+<tr><td>Attente moyenne d&#x27;un poste informatique</td><td>min</td><td>0.00</td><td>0.00</td><td>0.00</td></tr>
+<tr><td>Pic d&#x27;utilisateurs simultanés du logiciel</td><td>utilisateurs</td><td>0.00</td><td>4.00</td><td>+4.00</td></tr>
+<tr><td>Temps de documentation – chirurgien</td><td>h</td><td>25.65</td><td>76.62</td><td>+198.7 %</td></tr>
+<tr><td>Temps de documentation – ibode</td><td>h</td><td>16.86</td><td>16.31</td><td>-3.3 %</td></tr>
+</tbody></table>
+<h2>Effets humains (scénario « Déploiement selon la fiche (lundi 8 h) »)</h2>
+<p>Confiance moyenne dans l&#x27;outil (0 = aucune, 1 = totale), relevée chaque semaine :</p>
+<table><thead><tr><th>Métier</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>S5</th><th>Utilisation réelle de l&#x27;outil</th></tr></thead><tbody>
+<tr><td>chirurgien</td><td>0.50</td><td>0.48</td><td>0.46</td><td>0.47</td><td>0.48</td><td>100 %</td></tr>
+<tr><td>iade</td><td>0.50</td><td>0.50</td><td>0.49</td><td>0.48</td><td>0.48</td><td>non utilisateur</td></tr>
+<tr><td>ibode</td><td>0.50</td><td>0.50</td><td>0.49</td><td>0.49</td><td>0.48</td><td>non utilisateur</td></tr>
+<tr><td>mar</td><td>0.50</td><td>0.49</td><td>0.49</td><td>0.48</td><td>0.48</td><td>non utilisateur</td></tr>
+</tbody></table>
+<ul>
+<li>Pannes simulées : 6.8 en moyenne (409 min au total)</li>
+<li>Temps moyen d&#x27;une saisie avec l&#x27;outil, semaine par semaine (courbe d&#x27;apprentissage) : 6.79 min → 6.53 min → 6.18 min → 6.09 min</li>
+</ul>
+<p><em>Mécanismes : aversion à la perte (une panne fait baisser la confiance environ deux fois plus qu&#x27;un usage réussi ne la fait monter), influence des collègues pondérée par l&#x27;autorité, courbe d&#x27;apprentissage. Les coefficients marqués « à calibrer » ne sont pas encore mesurés : lire ces résultats comme des tendances.</em></p>
+<h2>Frictions détectées par la simulation</h2>
+<table><thead><tr><th>Gravité</th><th>Type</th><th>Parcours / étape</th><th>Rôle</th><th>Part des tâches</th><th>Occurrences / jour</th><th>Heures perdues / jour</th><th>Éléments à risque (sur la période)</th></tr></thead><tbody>
+<tr><td>critique</td><td>interoperabilite</td><td>20 parcours / intervention</td><td>chirurgien</td><td>99.1 %</td><td>25.5</td><td>0.91</td><td>0.0</td></tr>
+<tr><td>critique</td><td>cardinalite</td><td>20 parcours / intervention</td><td>chirurgien</td><td>44.0 %</td><td>11.3</td><td>0.36</td><td>21.8</td></tr>
+<tr><td>info</td><td>panne</td><td>14 parcours / intervention</td><td>chirurgien</td><td>0.7 %</td><td>0.2</td><td>0.01</td><td>0.0</td></tr>
+<tr><td>info</td><td>adoption</td><td>8 parcours / intervention</td><td>chirurgien</td><td>0.1 %</td><td>0.0</td><td>0.00</td><td>0.0</td></tr>
+</tbody></table>
+<h2>Constats d&#x27;architecture</h2>
+<ul>
+<li><strong>critique</strong> (interoperabilite) : Aucun connecteur vers bloc (&#x27;logiciel_bloc&#x27;) : les données devront être ressaisies dans le système actuel.</li>
+<li><strong>info</strong> (interoperabilite) : Pas de connecteur direct vers DPI : le flux passera par &#x27;logiciel_bloc&#x27;.</li>
+<li><strong>majeure</strong> (cardinalite) : 20 parcours : 1.63 éléments en moyenne par tâche &#x27;tracabilite_actes&#x27; pour un maximum de 1 par saisie.</li>
+</ul>
+<h2>Contrôle de complétude de la fiche (agent 1)</h2>
+<p>Verdict <strong>ANALYSABLE_AVEC_RESERVES</strong> — confiance <strong>faible</strong> — obligatoires 25/25, recommandés 7/12, facultatifs 0/3.</p>
+<table><thead><tr><th>Champ</th><th>Statut requis</th><th>État</th><th>Raison</th></tr></thead><tbody>
+<tr><td>B6.pannes_connues — Pannes ou défauts connus</td><td>R</td><td>Inconnu</td><td>L&#x27;auteur a écrit « Inconnu ».</td></tr>
+<tr><td>B7.accompagnement — Accompagnement</td><td>R</td><td>Inconnu</td><td>L&#x27;auteur a écrit « Inconnu ».</td></tr>
+<tr><td>B8.risques_organisation — Risques pour l&#x27;organisation</td><td>R</td><td>Partiel</td><td>Information floue : « plusieurs » sans précision chiffrée.</td></tr>
+<tr><td>B9.sites_utilisateurs — Sites déjà utilisateurs</td><td>R</td><td>Inconnu</td><td>L&#x27;auteur a écrit « Inconnu ».</td></tr>
+<tr><td>B9.etudes — Études ou chiffres publiés</td><td>R</td><td>Vide</td><td>Rien n&#x27;est écrit.</td></tr>
+<tr><td>B9.retours_soignants — Retour des soignants</td><td>R</td><td>Vide</td><td>Rien n&#x27;est écrit.</td></tr>
+</tbody></table>
+<h2>Conformité réglementaire et interopérabilité</h2>
+<p>Verdict <strong>NO_GO</strong> — conformité pondérée 79.5 %.</p>
+<table><thead><tr><th>Critère</th><th>Niveau</th><th>Exigence non démontrée</th></tr></thead><tbody>
+<tr><td>GO-01</td><td>bloquant</td><td>Conformité RGPD et analyse d&#x27;impact (AIPD) réalisée avant déploiement</td></tr>
+<tr><td>PER-03</td><td>majeur</td><td>Rapport de test d&#x27;intrusion récent et plan de correctifs</td></tr>
+</tbody></table>
+<h2>Questions à poser à l&#x27;auteur de la fiche ou à l&#x27;éditeur</h2>
+<ol>
+<li>Quels incidents ont déjà été observés ?</li>
+<li>Y a-t-il des référents dans l&#x27;équipe ou une aide sur place ?</li>
+<li>Quels risques pour l&#x27;organisation (retards, surcharge, dépendances) ?</li>
+<li>Quels établissements l&#x27;utilisent déjà ?</li>
+<li>Existe-t-il des études publiées (référence complète) ?</li>
+<li>Que disent les soignants qui l&#x27;utilisent, en positif et en négatif ?</li>
+</ol>
+<h2>Hypothèses faites pour l&#x27;analyse</h2>
+<ul>
+<li>Durées « avec le logiciel » issues de l&#x27;éditeur seul : incertitude élargie (de -25 % à +50 %).</li>
+<li>« Tracer les actes de l&#x27;intervention » : 0.5 min annoncées par l&#x27;éditeur, simulées entre 0.375 et 0.75 min.</li>
+</ul>
+<h2>Conditions de déploiement recommandées</h2>
+<ul>
+<li>Conditionner le déploiement au développement du connecteur manquant (via l&#x27;EAI).</li>
+<li>Exiger de l&#x27;éditeur la saisie de plusieurs éléments par fiche, ou chiffrer le temps perdu avant signature.</li>
+</ul>
+<h2>Détail du score</h2>
+<table><thead><tr><th>Motif</th><th>Points</th></tr></thead><tbody>
+<tr><td>Exigence bloquant non démontrée : Conformité RGPD et analyse d&#x27;impact (AIPD) réalisée avant déploiement (GO-01)</td><td>-10.0</td></tr>
+<tr><td>Exigence majeur non démontrée : Rapport de test d&#x27;intrusion récent et plan de correctifs (PER-03)</td><td>-4.0</td></tr>
+<tr><td>Friction interoperabilite (critique) — 20 parcours/intervention</td><td>-20.0</td></tr>
+<tr><td>Friction cardinalite (critique) — 20 parcours/intervention</td><td>-20.0</td></tr>
+<tr><td>NO_GO réglementaire : score plafonné à 40</td><td>0.0</td></tr>
+</tbody></table>
+<h2>Paramètres à calibrer</h2>
+<p>Ces valeurs ne sont pas encore mesurées sur le terrain ; elles conditionnent la précision des résultats.</p>
+<ul>
+<li>Effectifs par plage horaire : Médecins anesthésistes-réanimateurs (une induction à la fois)</li>
+<li>Effectifs par plage horaire : Infirmiers anesthésistes (IADE)</li>
+<li>Effectifs par plage horaire : Infirmiers de bloc opératoire (IBODE)</li>
+<li>Effectifs par plage horaire : IDE panseurs (circulants)</li>
+<li>Effectifs par plage horaire : IDE de SSPI</li>
+<li>Effectifs par plage horaire : Brancardiers d&#x27;installation (salle, table, transfert SSPI)</li>
+<li>Effectifs par plage horaire : Agents de bionettoyage (ASH)</li>
+<li>Patients surveillés par IDE de SSPI : 4</li>
+<li>Effectif : Cardiologues interventionnels</li>
+<li>Postes de pré-anesthésie : 8</li>
+<li>Début des vacations programmées (ouverture et vérification de salle) : 08:30</li>
+<li>Taux de remplissage du programme opératoire : 0.73</li>
+<li>Délai d&#x27;appel du patient avant l&#x27;heure prévue : 60 min</li>
+<li>Découpage de l&#x27;occupation de salle en phases (installation, induction, intervention, réveil)</li>
+<li>Durées de brancardage, d&#x27;accueil en pré-anesthésie, de bionettoyage et de transfert</li>
+<li>Durées de SSPI par type d&#x27;anesthésie</li>
+<li>Probabilités d&#x27;usage des équipements partagés par spécialité</li>
+<li>Nombre d&#x27;actes CCAM et de dispositifs médicaux tracés par intervention</li>
+<li>Part de patients venant à pied (debout) par spécialité</li>
+<li>alpha (apprentissage) — à calibrer</li>
+<li>kappa (influence des collègues) — à calibrer</li>
+<li>confiance initiale — à calibrer</li>
+<li>seuil de contournement — à calibrer</li>
+<li>facteur du 1er usage — à calibrer</li>
+</ul>
+<h2>Annexe — tous les indicateurs</h2>
+<table><thead><tr><th>Indicateur</th><th>Unité</th><th>Sans l&#x27;outil (IC 95 %)</th><th>Avec l&#x27;outil (IC 95 %)</th></tr></thead><tbody>
+<tr><td>Attente moyenne d&#x27;un poste informatique</td><td>min</td><td>0.00 [0.00 ; 0.00]</td><td>0.00 [0.00 ; 0.00]</td></tr>
+<tr><td>Attente moyenne de ressources par étape</td><td>min</td><td>6.92 [5.64 ; 8.19]</td><td>7.70 [6.19 ; 9.20]</td></tr>
+<tr><td>Cas annulés avant le bloc</td><td>cas</td><td>144.60 [132.19 ; 157.01]</td><td>144.60 [132.19 ; 157.01]</td></tr>
+<tr><td>Cas déprogrammés le jour même (règle de fin)</td><td>cas</td><td>0.70 [-0.65 ; 2.05]</td><td>1.80 [-1.78 ; 5.38]</td></tr>
+<tr><td>Cas programmés</td><td>cas</td><td>866.00 [829.45 ; 902.55]</td><td>866.00 [829.45 ; 902.55]</td></tr>
+<tr><td>Confiance moyenne dans l&#x27;outil – cardiologue</td><td>0-1</td><td>0.00 [0.00 ; 0.00]</td><td>0.35 [0.30 ; 0.39]</td></tr>
+<tr><td>Confiance moyenne dans l&#x27;outil – chir_gynecologie</td><td>0-1</td><td>0.00 [0.00 ; 0.00]</td><td>0.47 [0.43 ; 0.51]</td></tr>
+<tr><td>Confiance moyenne dans l&#x27;outil – chir_ophtalmologie</td><td>0-1</td><td>0.00 [0.00 ; 0.00]</td><td>0.48 [0.45 ; 0.51]</td></tr>
+<tr><td>Confiance moyenne dans l&#x27;outil – chir_orl</td><td>0-1</td><td>0.00 [0.00 ; 0.00]</td><td>0.43 [0.39 ; 0.48]</td></tr>
+<tr><td>Confiance moyenne dans l&#x27;outil – chir_orthopedie</td><td>0-1</td><td>0.00 [0.00 ; 0.00]</td><td>0.49 [0.46 ; 0.52]</td></tr>
+<tr><td>Confiance moyenne dans l&#x27;outil – chir_urologie</td><td>0-1</td><td>0.00 [0.00 ; 0.00]</td><td>0.47 [0.43 ; 0.51]</td></tr>
+<tr><td>Confiance moyenne dans l&#x27;outil – chir_visceral</td><td>0-1</td><td>0.00 [0.00 ; 0.00]</td><td>0.49 [0.45 ; 0.52]</td></tr>
+<tr><td>Confiance moyenne dans l&#x27;outil – endoscopiste</td><td>0-1</td><td>0.00 [0.00 ; 0.00]</td><td>0.47 [0.43 ; 0.51]</td></tr>
+<tr><td>Confiance moyenne dans l&#x27;outil – iade</td><td>0-1</td><td>0.00 [0.00 ; 0.00]</td><td>0.48 [0.47 ; 0.50]</td></tr>
+<tr><td>Confiance moyenne dans l&#x27;outil – ibode</td><td>0-1</td><td>0.00 [0.00 ; 0.00]</td><td>0.48 [0.47 ; 0.50]</td></tr>
+<tr><td>Confiance moyenne dans l&#x27;outil – mar</td><td>0-1</td><td>0.00 [0.00 ; 0.00]</td><td>0.48 [0.47 ; 0.50]</td></tr>
+<tr><td>Contrôle d&#x27;ubiquité (doit rester à 0)</td><td>violations</td><td>0.00 [0.00 ; 0.00]</td><td>0.00 [0.00 ; 0.00]</td></tr>
+<tr><td>Dépassement horaire moyen par jour et par service</td><td>min</td><td>247.24 [231.25 ; 263.23]</td><td>250.90 [238.79 ; 263.01]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – prog_cardiologie</td><td>min</td><td>9.65 [-5.02 ; 24.33]</td><td>9.65 [-5.02 ; 24.33]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – prog_chirurgie_generale_et_digestive</td><td>min</td><td>104.78 [99.57 ; 109.99]</td><td>104.78 [99.57 ; 109.99]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – prog_chirurgie_orl</td><td>min</td><td>84.45 [78.49 ; 90.42]</td><td>84.45 [78.49 ; 90.42]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – prog_chirurgie_orthopedique</td><td>min</td><td>110.99 [106.82 ; 115.16]</td><td>110.99 [106.82 ; 115.16]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – prog_chirurgie_urologique</td><td>min</td><td>81.59 [76.69 ; 86.49]</td><td>81.59 [76.69 ; 86.49]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – prog_endoscopie_digestive</td><td>min</td><td>34.71 [33.57 ; 35.84]</td><td>34.71 [33.57 ; 35.84]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – prog_gynecologie_obstetrique</td><td>min</td><td>60.88 [56.57 ; 65.20]</td><td>60.88 [56.57 ; 65.20]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – prog_ophtalmologie</td><td>min</td><td>17.33 [16.65 ; 18.00]</td><td>17.33 [16.65 ; 18.00]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – prog_stomatologie</td><td>min</td><td>69.49 [42.42 ; 96.56]</td><td>69.49 [42.42 ; 96.56]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – prog_urologie_robot</td><td>min</td><td>371.01 [307.95 ; 434.07]</td><td>371.01 [307.95 ; 434.07]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – prog_visceral_robot</td><td>min</td><td>208.63 [136.30 ; 280.97]</td><td>208.63 [136.30 ; 280.97]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – urg_cardiologie</td><td>min</td><td>21.22 [1.55 ; 40.90]</td><td>17.84 [-0.35 ; 36.03]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – urg_chirurgie_generale_et_digestive</td><td>min</td><td>113.85 [106.66 ; 121.04]</td><td>117.30 [110.62 ; 123.98]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – urg_chirurgie_orl</td><td>min</td><td>98.04 [81.09 ; 114.98]</td><td>91.31 [69.33 ; 113.29]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – urg_chirurgie_orthopedique</td><td>min</td><td>114.78 [111.33 ; 118.24]</td><td>111.17 [104.97 ; 117.37]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – urg_chirurgie_urologique</td><td>min</td><td>86.72 [80.49 ; 92.95]</td><td>84.98 [77.14 ; 92.82]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – urg_endoscopie_digestive</td><td>min</td><td>36.01 [14.11 ; 57.90]</td><td>34.63 [20.33 ; 48.92]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – urg_gynecologie_obstetrique</td><td>min</td><td>62.77 [55.49 ; 70.05]</td><td>64.37 [57.85 ; 70.88]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – urg_stomatologie</td><td>min</td><td>24.40 [-3.72 ; 52.51]</td><td>30.89 [-6.47 ; 68.25]</td></tr>
+<tr><td>Durée médiane d&#x27;occupation de salle – urg_visceral_robot</td><td>min</td><td>190.23 [115.16 ; 265.29]</td><td>228.44 [147.75 ; 309.13]</td></tr>
+<tr><td>Durée moyenne de parcours</td><td>min</td><td>257.37 [247.38 ; 267.35]</td><td>267.67 [254.86 ; 280.47]</td></tr>
+<tr><td>Durée moyenne de parcours – prog_cardiologie</td><td>min</td><td>34.98 [-18.25 ; 88.21]</td><td>40.34 [-21.09 ; 101.77]</td></tr>
+<tr><td>Durée moyenne de parcours – prog_chirurgie_generale_et_digestive</td><td>min</td><td>273.28 [268.31 ; 278.26]</td><td>282.69 [278.72 ; 286.66]</td></tr>
+<tr><td>Durée moyenne de parcours – prog_chirurgie_orl</td><td>min</td><td>250.11 [243.01 ; 257.22]</td><td>253.48 [245.69 ; 261.27]</td></tr>
+<tr><td>Durée moyenne de parcours – prog_chirurgie_orthopedique</td><td>min</td><td>256.87 [250.01 ; 263.74]</td><td>265.04 [257.20 ; 272.89]</td></tr>
+<tr><td>Durée moyenne de parcours – prog_chirurgie_urologique</td><td>min</td><td>242.94 [236.64 ; 249.25]</td><td>250.43 [241.33 ; 259.53]</td></tr>
+<tr><td>Durée moyenne de parcours – prog_endoscopie_digestive</td><td>min</td><td>184.50 [177.94 ; 191.05]</td><td>192.97 [186.11 ; 199.82]</td></tr>
+<tr><td>Durée moyenne de parcours – prog_gynecologie_obstetrique</td><td>min</td><td>208.81 [198.97 ; 218.65]</td><td>218.19 [207.99 ; 228.38]</td></tr>
+<tr><td>Durée moyenne de parcours – prog_ophtalmologie</td><td>min</td><td>141.63 [128.35 ; 154.92]</td><td>151.63 [139.13 ; 164.13]</td></tr>
+<tr><td>Durée moyenne de parcours – prog_stomatologie</td><td>min</td><td>183.69 [114.06 ; 253.31]</td><td>190.02 [117.63 ; 262.41]</td></tr>
+<tr><td>Durée moyenne de parcours – prog_urologie_robot</td><td>min</td><td>556.23 [480.43 ; 632.03]</td><td>572.45 [489.48 ; 655.42]</td></tr>
+<tr><td>Durée moyenne de parcours – prog_visceral_robot</td><td>min</td><td>390.35 [274.46 ; 506.24]</td><td>396.19 [280.28 ; 512.10]</td></tr>
+<tr><td>Durée moyenne de parcours – urg_cardiologie</td><td>min</td><td>111.06 [-51.50 ; 273.62]</td><td>124.57 [-60.02 ; 309.16]</td></tr>
+<tr><td>Durée moyenne de parcours – urg_chirurgie_generale_et_digestive</td><td>min</td><td>431.61 [389.40 ; 473.82]</td><td>449.42 [392.09 ; 506.76]</td></tr>
+<tr><td>Durée moyenne de parcours – urg_chirurgie_orl</td><td>min</td><td>388.88 [299.85 ; 477.92]</td><td>380.79 [288.84 ; 472.74]</td></tr>
+<tr><td>Durée moyenne de parcours – urg_chirurgie_orthopedique</td><td>min</td><td>397.89 [356.71 ; 439.07]</td><td>413.54 [367.09 ; 459.99]</td></tr>
+<tr><td>Durée moyenne de parcours – urg_chirurgie_urologique</td><td>min</td><td>375.92 [333.50 ; 418.33]</td><td>401.44 [344.34 ; 458.54]</td></tr>
+<tr><td>Durée moyenne de parcours – urg_endoscopie_digestive</td><td>min</td><td>472.20 [176.35 ; 768.04]</td><td>499.74 [178.97 ; 820.52]</td></tr>
+<tr><td>Durée moyenne de parcours – urg_gynecologie_obstetrique</td><td>min</td><td>374.34 [304.93 ; 443.76]</td><td>371.50 [306.88 ; 436.12]</td></tr>
+<tr><td>Durée moyenne de parcours – urg_stomatologie</td><td>min</td><td>73.46 [-23.36 ; 170.28]</td><td>62.30 [-12.16 ; 136.76]</td></tr>
+<tr><td>Durée moyenne de parcours – urg_visceral_robot</td><td>min</td><td>566.41 [325.47 ; 807.34]</td><td>680.63 [466.86 ; 894.39]</td></tr>
+<tr><td>Durées négatives tirées (doit rester à 0)</td><td>cas</td><td>0.00 [0.00 ; 0.00]</td><td>0.00 [0.00 ; 0.00]</td></tr>
+<tr><td>Éléments potentiellement non documentés</td><td>éléments</td><td>0.00 [0.00 ; 0.00]</td><td>21.80 [17.94 ; 25.66]</td></tr>
+<tr><td>Heure médiane d&#x27;entrée du premier cas (minutes depuis minuit)</td><td>min</td><td>510.00 [510.00 ; 510.00]</td><td>510.00 [510.00 ; 510.00]</td></tr>
+<tr><td>Interventions réalisées par dimanche</td><td>cas/j</td><td>4.65 [3.81 ; 5.49]</td><td>4.65 [3.81 ; 5.49]</td></tr>
+<tr><td>Interventions réalisées par jeudi</td><td>cas/j</td><td>42.62 [38.55 ; 46.70]</td><td>42.62 [38.55 ; 46.70]</td></tr>
+<tr><td>Interventions réalisées par lundi</td><td>cas/j</td><td>31.48 [28.08 ; 34.87]</td><td>31.38 [27.88 ; 34.87]</td></tr>
+<tr><td>Interventions réalisées par mardi</td><td>cas/j</td><td>31.60 [29.18 ; 34.02]</td><td>31.52 [29.08 ; 33.97]</td></tr>
+<tr><td>Interventions réalisées par mercredi</td><td>cas/j</td><td>34.25 [31.22 ; 37.28]</td><td>34.23 [31.18 ; 37.27]</td></tr>
+<tr><td>Interventions réalisées par samedi</td><td>cas/j</td><td>5.60 [4.52 ; 6.68]</td><td>5.60 [4.52 ; 6.68]</td></tr>
+<tr><td>Interventions réalisées par vendredi</td><td>cas/j</td><td>29.98 [26.49 ; 33.46]</td><td>29.90 [26.49 ; 33.31]</td></tr>
+<tr><td>Jours d&#x27;activité simulés</td><td>jours</td><td>28.00 [28.00 ; 28.00]</td><td>28.00 [28.00 ; 28.00]</td></tr>
+<tr><td>minutes_de_panne</td><td></td><td>0.00 [0.00 ; 0.00]</td><td>408.99 [218.38 ; 599.60]</td></tr>
+<tr><td>Occupation rapportée à la capacité totale (toutes salles × vacation)</td><td>%</td><td>49.92 [47.96 ; 51.87]</td><td>49.98 [48.18 ; 51.78]</td></tr>
+<tr><td>Taux d&#x27;occupation des salles (temps patient / temps d&#x27;ouverture)</td><td>%</td><td>52.06 [50.55 ; 53.57]</td><td>52.18 [50.70 ; 53.65]</td></tr>
+<tr><td>pannes</td><td></td><td>0.00 [0.00 ; 0.00]</td><td>6.80 [5.26 ; 8.34]</td></tr>
+<tr><td>Patients par jour actif – prog_cardiologie</td><td>patients/j</td><td>0.04 [-0.02 ; 0.10]</td><td>0.04 [-0.02 ; 0.10]</td></tr>
+<tr><td>Patients par jour actif – prog_chirurgie_generale_et_digestive</td><td>patients/j</td><td>2.34 [2.04 ; 2.64]</td><td>2.34 [2.04 ; 2.64]</td></tr>
+<tr><td>Patients par jour actif – prog_chirurgie_orl</td><td>patients/j</td><td>1.09 [0.84 ; 1.34]</td><td>1.09 [0.84 ; 1.34]</td></tr>
+<tr><td>Patients par jour actif – prog_chirurgie_orthopedique</td><td>patients/j</td><td>3.17 [2.83 ; 3.51]</td><td>3.16 [2.82 ; 3.51]</td></tr>
+<tr><td>Patients par jour actif – prog_chirurgie_urologique</td><td>patients/j</td><td>2.29 [1.88 ; 2.71]</td><td>2.29 [1.87 ; 2.71]</td></tr>
+<tr><td>Patients par jour actif – prog_endoscopie_digestive</td><td>patients/j</td><td>4.30 [3.45 ; 5.15]</td><td>4.29 [3.45 ; 5.14]</td></tr>
+<tr><td>Patients par jour actif – prog_gynecologie_obstetrique</td><td>patients/j</td><td>2.29 [1.96 ; 2.62]</td><td>2.28 [1.95 ; 2.61]</td></tr>
+<tr><td>Patients par jour actif – prog_ophtalmologie</td><td>patients/j</td><td>4.04 [3.37 ; 4.70]</td><td>4.03 [3.36 ; 4.70]</td></tr>
+<tr><td>Patients par jour actif – prog_stomatologie</td><td>patients/j</td><td>0.33 [0.17 ; 0.48]</td><td>0.33 [0.17 ; 0.48]</td></tr>
+<tr><td>Patients par jour actif – prog_urologie_robot</td><td>patients/j</td><td>0.19 [0.10 ; 0.27]</td><td>0.19 [0.10 ; 0.27]</td></tr>
+<tr><td>Patients par jour actif – prog_visceral_robot</td><td>patients/j</td><td>0.21 [0.12 ; 0.30]</td><td>0.21 [0.12 ; 0.30]</td></tr>
+<tr><td>Patients par jour actif – urg_cardiologie</td><td>patients/j</td><td>0.01 [0.00 ; 0.03]</td><td>0.01 [0.00 ; 0.03]</td></tr>
+<tr><td>Patients par jour actif – urg_chirurgie_generale_et_digestive</td><td>patients/j</td><td>1.76 [1.59 ; 1.93]</td><td>1.76 [1.59 ; 1.93]</td></tr>
+<tr><td>Patients par jour actif – urg_chirurgie_orl</td><td>patients/j</td><td>0.19 [0.14 ; 0.23]</td><td>0.19 [0.14 ; 0.23]</td></tr>
+<tr><td>Patients par jour actif – urg_chirurgie_orthopedique</td><td>patients/j</td><td>1.87 [1.63 ; 2.10]</td><td>1.87 [1.63 ; 2.10]</td></tr>
+<tr><td>Patients par jour actif – urg_chirurgie_urologique</td><td>patients/j</td><td>0.71 [0.58 ; 0.85]</td><td>0.71 [0.58 ; 0.85]</td></tr>
+<tr><td>Patients par jour actif – urg_endoscopie_digestive</td><td>patients/j</td><td>0.04 [0.02 ; 0.06]</td><td>0.04 [0.02 ; 0.06]</td></tr>
+<tr><td>Patients par jour actif – urg_gynecologie_obstetrique</td><td>patients/j</td><td>0.79 [0.67 ; 0.90]</td><td>0.79 [0.67 ; 0.90]</td></tr>
+<tr><td>Patients par jour actif – urg_stomatologie</td><td>patients/j</td><td>0.02 [0.00 ; 0.05]</td><td>0.02 [0.00 ; 0.05]</td></tr>
+<tr><td>Patients par jour actif – urg_visceral_robot</td><td>patients/j</td><td>0.07 [0.04 ; 0.10]</td><td>0.07 [0.04 ; 0.10]</td></tr>
+<tr><td>Patients pris en charge (parcours terminés)</td><td>patients</td><td>720.70 [691.60 ; 749.80]</td><td>719.60 [690.17 ; 749.03]</td></tr>
+<tr><td>Pic d&#x27;utilisateurs simultanés du logiciel</td><td>utilisateurs</td><td>0.00 [0.00 ; 0.00]</td><td>4.00 [4.00 ; 4.00]</td></tr>
+<tr><td>Nombre total de saisies</td><td>saisies</td><td>1049.20 [1004.07 ; 1094.33]</td><td>1482.10 [1421.79 ; 1542.41]</td></tr>
+<tr><td>Taux d&#x27;annulation</td><td>%</td><td>16.67 [15.58 ; 17.76]</td><td>16.67 [15.58 ; 17.76]</td></tr>
+<tr><td>Cas programmés sortant de salle après la fermeture</td><td>%</td><td>1.76 [1.36 ; 2.16]</td><td>2.13 [1.64 ; 2.63]</td></tr>
+<tr><td>Taux d&#x27;utilisation effective de l&#x27;outil – cardiologue</td><td>%</td><td>0.00 [0.00 ; 0.00]</td><td>50.00 [12.30 ; 87.70]</td></tr>
+<tr><td>Taux d&#x27;utilisation effective de l&#x27;outil – chir_gynecologie</td><td>%</td><td>0.00 [0.00 ; 0.00]</td><td>99.77 [99.43 ; 100.11]</td></tr>
+<tr><td>Taux d&#x27;utilisation effective de l&#x27;outil – chir_ophtalmologie</td><td>%</td><td>0.00 [0.00 ; 0.00]</td><td>99.77 [99.24 ; 100.29]</td></tr>
+<tr><td>Taux d&#x27;utilisation effective de l&#x27;outil – chir_orl</td><td>%</td><td>0.00 [0.00 ; 0.00]</td><td>99.52 [98.80 ; 100.24]</td></tr>
+<tr><td>Taux d&#x27;utilisation effective de l&#x27;outil – chir_orthopedie</td><td>%</td><td>0.00 [0.00 ; 0.00]</td><td>99.67 [99.10 ; 100.25]</td></tr>
+<tr><td>Taux d&#x27;utilisation effective de l&#x27;outil – chir_urologie</td><td>%</td><td>0.00 [0.00 ; 0.00]</td><td>100.00 [100.00 ; 100.00]</td></tr>
+<tr><td>Taux d&#x27;utilisation effective de l&#x27;outil – chir_visceral</td><td>%</td><td>0.00 [0.00 ; 0.00]</td><td>99.91 [99.71 ; 100.11]</td></tr>
+<tr><td>Taux d&#x27;utilisation effective de l&#x27;outil – endoscopiste</td><td>%</td><td>0.00 [0.00 ; 0.00]</td><td>100.00 [100.00 ; 100.00]</td></tr>
+<tr><td>Temps total consacré à la documentation</td><td>h</td><td>42.51 [40.66 ; 44.36]</td><td>92.92 [89.39 ; 96.46]</td></tr>
+<tr><td>Temps de documentation – cardiologue</td><td>h</td><td>0.06 [0.00 ; 0.12]</td><td>0.18 [-0.02 ; 0.37]</td></tr>
+<tr><td>Temps de documentation – chir_gynecologie</td><td>h</td><td>3.07 [2.69 ; 3.45]</td><td>9.08 [8.06 ; 10.11]</td></tr>
+<tr><td>Temps de documentation – chir_ophtalmologie</td><td>h</td><td>4.01 [3.37 ; 4.66]</td><td>12.16 [10.33 ; 14.00]</td></tr>
+<tr><td>Temps de documentation – chir_orl</td><td>h</td><td>1.60 [1.26 ; 1.93]</td><td>4.72 [3.70 ; 5.73]</td></tr>
+<tr><td>Temps de documentation – chir_orthopedie</td><td>h</td><td>5.04 [4.51 ; 5.56]</td><td>14.80 [13.12 ; 16.48]</td></tr>
+<tr><td>Temps de documentation – chir_urologie</td><td>h</td><td>3.19 [2.69 ; 3.69]</td><td>9.63 [8.04 ; 11.22]</td></tr>
+<tr><td>Temps de documentation – chir_visceral</td><td>h</td><td>4.33 [3.98 ; 4.68]</td><td>12.81 [11.76 ; 13.87]</td></tr>
+<tr><td>Temps de documentation – endoscopiste</td><td>h</td><td>4.36 [3.54 ; 5.18]</td><td>13.23 [10.77 ; 15.69]</td></tr>
+<tr><td>Temps de documentation – ibode</td><td>h</td><td>16.86 [15.57 ; 18.14]</td><td>16.31 [15.29 ; 17.32]</td></tr>
+<tr><td>Temps moyen par tâche de documentation</td><td>min</td><td>2.43 [2.40 ; 2.46]</td><td>5.37 [5.27 ; 5.46]</td></tr>
+<tr><td>Taux d&#x27;occupation – amplificateur</td><td>%</td><td>5.25 [4.74 ; 5.76]</td><td>5.34 [4.72 ; 5.96]</td></tr>
+<tr><td>Taux d&#x27;occupation – ash</td><td>%</td><td>6.30 [6.02 ; 6.59]</td><td>6.37 [6.10 ; 6.64]</td></tr>
+<tr><td>Taux d&#x27;occupation – brancardier_bloc</td><td>%</td><td>7.36 [7.08 ; 7.64]</td><td>7.36 [7.10 ; 7.63]</td></tr>
+<tr><td>Taux d&#x27;occupation – brancardier_service</td><td>%</td><td>21.83 [21.04 ; 22.61]</td><td>21.77 [20.94 ; 22.61]</td></tr>
+<tr><td>Taux d&#x27;occupation – cardiologue</td><td>%</td><td>0.09 [-0.01 ; 0.19]</td><td>0.10 [-0.01 ; 0.21]</td></tr>
+<tr><td>Taux d&#x27;occupation – chir_gynecologie</td><td>%</td><td>4.10 [3.52 ; 4.68]</td><td>4.49 [3.90 ; 5.09]</td></tr>
+<tr><td>Taux d&#x27;occupation – chir_ophtalmologie</td><td>%</td><td>1.95 [1.63 ; 2.27]</td><td>2.44 [2.05 ; 2.83]</td></tr>
+<tr><td>Taux d&#x27;occupation – chir_orl</td><td>%</td><td>4.19 [3.36 ; 5.03]</td><td>4.42 [3.54 ; 5.30]</td></tr>
+<tr><td>Taux d&#x27;occupation – chir_orthopedie</td><td>%</td><td>10.59 [9.46 ; 11.72]</td><td>11.19 [10.01 ; 12.38]</td></tr>
+<tr><td>Taux d&#x27;occupation – chir_urologie</td><td>%</td><td>6.73 [5.45 ; 8.00]</td><td>7.20 [5.83 ; 8.56]</td></tr>
+<tr><td>Taux d&#x27;occupation – chir_visceral</td><td>%</td><td>10.97 [9.98 ; 11.96]</td><td>11.48 [10.58 ; 12.37]</td></tr>
+<tr><td>Taux d&#x27;occupation – colonne_coelioscopie</td><td>%</td><td>5.79 [5.32 ; 6.27]</td><td>6.13 [5.66 ; 6.59]</td></tr>
+<tr><td>Taux d&#x27;occupation – echographe</td><td>%</td><td>2.97 [2.70 ; 3.25]</td><td>3.21 [2.90 ; 3.52]</td></tr>
+<tr><td>Taux d&#x27;occupation – endoscopiste</td><td>%</td><td>2.28 [1.86 ; 2.70]</td><td>2.65 [2.16 ; 3.13]</td></tr>
+<tr><td>Taux d&#x27;occupation – iade</td><td>%</td><td>53.01 [51.39 ; 54.64]</td><td>55.47 [53.93 ; 57.02]</td></tr>
+<tr><td>Taux d&#x27;occupation – ibode</td><td>%</td><td>33.89 [32.91 ; 34.88]</td><td>36.52 [35.49 ; 37.56]</td></tr>
+<tr><td>Taux d&#x27;occupation – ide_bloc</td><td>%</td><td>24.55 [22.94 ; 26.17]</td><td>24.33 [22.77 ; 25.88]</td></tr>
+<tr><td>Taux d&#x27;occupation – ide_sspi</td><td>%</td><td>0.00 [0.00 ; 0.00]</td><td>0.00 [0.00 ; 0.00]</td></tr>
+<tr><td>Taux d&#x27;occupation – ide_sspi_place</td><td>%</td><td>11.41 [10.78 ; 12.05]</td><td>11.25 [10.70 ; 11.80]</td></tr>
+<tr><td>Taux d&#x27;occupation – lit_sspi</td><td>%</td><td>6.25 [5.90 ; 6.59]</td><td>6.16 [5.86 ; 6.46]</td></tr>
+<tr><td>Taux d&#x27;occupation – mar</td><td>%</td><td>19.11 [18.57 ; 19.65]</td><td>19.16 [18.63 ; 19.68]</td></tr>
+<tr><td>Taux d&#x27;occupation – mar_supervision</td><td>%</td><td>21.16 [20.61 ; 21.70]</td><td>21.20 [20.68 ; 21.72]</td></tr>
+<tr><td>Taux d&#x27;occupation – microscope</td><td>%</td><td>2.36 [2.02 ; 2.69]</td><td>2.38 [2.07 ; 2.69]</td></tr>
+<tr><td>Taux d&#x27;occupation – poste_preanesthesie</td><td>%</td><td>9.33 [8.62 ; 10.04]</td><td>10.14 [9.36 ; 10.92]</td></tr>
+<tr><td>Taux d&#x27;occupation – poste_salle</td><td>%</td><td>0.36 [0.34 ; 0.37]</td><td>1.06 [1.02 ; 1.11]</td></tr>
+<tr><td>Taux d&#x27;occupation – robot</td><td>%</td><td>5.33 [4.12 ; 6.54]</td><td>5.45 [4.28 ; 6.61]</td></tr>
+<tr><td>Taux d&#x27;occupation – salle_op</td><td>%</td><td>62.08 [60.05 ; 64.11]</td><td>64.93 [62.97 ; 66.90]</td></tr>
+</tbody></table>
+<hr>
+<p><em>Méthode : jumeau numérique du bloc opératoire (simulation à événements discrets et à agents), scénarios « sans outil » et « avec outil » sur les mêmes patients, graine 42. Blocapta aide à décider : il ne remplace ni l&#x27;avis des soignants ni un essai réel. Les chiffres du texte sont vérifiés automatiquement contre les résultats de simulation.</em></p>
+</body></html>

@@ -16,6 +16,7 @@ from .hospital import TimeWindow
 
 class TouchPoint(BaseModel):
     task_kind: str
+    specialties: list[str] = Field(default_factory=list, description="Spécialités concernées ; vide = toutes")
     replaces_current: bool = True
     roles: list[str] = Field(default_factory=list, description="Rôles supportés ; vide = tous")
     max_items_per_entry: int | None = Field(default=None, ge=1)

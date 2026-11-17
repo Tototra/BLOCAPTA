@@ -76,7 +76,7 @@ def _severity(ftype: str, hours_per_day: float, share: float, items_per_day: flo
         or (ftype == "cardinalite" and share >= 0.3)
     ):
         return "critique"
-    if hours_per_day >= 0.25 or share >= 0.2 or items_per_day > 0 or ftype in {"couverture", "interoperabilite", "panne"}:
+    if hours_per_day >= 0.25 or share >= 0.2 or items_per_day > 0 or ftype in {"couverture", "interoperabilite"}:
         return "majeure"
     if share >= 0.02:
         return "mineure"

@@ -1,28 +1,25 @@
-# Exemple de réponses au questionnaire DSI (fictives).
-id: ch_val_de_loire
-archetype: ch_general
+# Exemple de réponses au questionnaire DSI (fictives), appliquées sur le bloc de référence.
+id: bloc_ch_val
+archetype: bloc_reference
 answers:
   A1: Centre hospitalier du Val (fictif)
   A2: CH
   A3: 520
-  B1: 9
-  B2: "07:45-18:30"
-  B3: lun-ven
-  B4: "18:30"
-  B5: 31
-  B6: { mean: 110, sd: 40 }
-  B7: { 1: 0.40, 2: 0.36, 3: 0.17, 4: 0.07 }
-  B8: 12
-  C1: 11
-  C2: 9
-  C3: 13
-  C4: "07:30-19:00"
-  D1: 5
-  D3: { mean: 24, sd: 11 }
-  E2: [0.5, 1.2, 2.5]
-  E3: [0.3, 0.6, 1.2]
-  E4: 9
-  E5: non
-  F1: Éditeur DPI X
-  F5: oui
+  B1: 8
+  B2: "08:00-18:00"
+  B3: "08:15"
+  B4: "17:30"
+  B5: "18:00"
+  B6: 9
+  B7: 45
+  C1: 6
+  C3: 10
+  D1: "8h-17h : 3 ; 8h-20h : 2 ; 20h-8h : 1"
+  E1: 2
+  E3: 1
+  E6: 8
+  F1: { 1: 0.40, 2: 0.36, 3: 0.17, 4: 0.07 }
+  F2: [0.5, 1.2, 2.5]
+  F7: oui
+  G8: Pseudonymisation par le DIM, validation DPO en cours
   H1: Les chirurgiens ressaisissent les actes dans le DPI quand le logiciel de bloc est en panne.

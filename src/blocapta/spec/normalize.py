@@ -45,6 +45,19 @@ CATEGORY_MAP = {
     "sterilisation": "sterilisation",
     "pacs": "PACS",
 }
+SPECIALTY_HINTS = {
+    "orthop": ["orthop"],
+    "viscer": ["generale et digestive", "visceral"],
+    "digestiv": ["generale et digestive"],
+    "urolog": ["urolog"],
+    "gyn": ["gynecolog"],
+    "ophtalm": ["ophtalm"],
+    "orl": ["orl"],
+    "endoscop": ["endoscop"],
+    "stomato": ["stomato"],
+    "cardio": ["cardio"],
+    "robot": ["robot"],
+}
 TASK_HINTS = [
     (r"implant|dispositif|\bdm\b|udi|tra[cç]abilit[ée] des d", "tracabilite_dm"),
     (r"acte|ccam|codage|cotation", "tracabilite_actes"),
@@ -101,8 +114,29 @@ def uncertain(value: float, proof: str | None) -> Triangular | Fixed:
     return Triangular(low=round(value * lo, 3), mode=round(value, 3), high=round(value * hi, 3))
 
 
-def fiche_to_software(fiche: FicheLogiciel, known_tasks: set[str] | None = None) -> tuple[SoftwareModel, list[Hypothese]]:
+def scope_specialties(text: str | None, known: set[str] | None) -> list[str]:
+    """Spécialités du jumeau couvertes par le périmètre écrit dans la fiche (vide = toutes)."""
+    if not text or not known:
+        return []
+    t = _norm(text)
+    if re.search(r"\btout(es)?\b", t) and not re.search(r"sauf|hors", t):
+        return []
+    hits = set()
+    for token, patterns in SPECIALTY_HINTS.items():
+        if token in t:
+            for spe in known:
+                if any(p in _norm(spe) for p in patterns):
+                    hits.add(spe)
+    return sorted(hits)
+
+
+def fiche_to_software(
+    fiche: FicheLogiciel, known_tasks: set[str] | None = None, known_specialties: set[str] | None = None
+) -> tuple[SoftwareModel, list[Hypothese]]:
     hyps: list[Hypothese] = []
+    scope = scope_specialties(fiche.perimetre.salles_specialites, known_specialties)
+    if scope:
+        hyps.append(Hypothese(champ_id="B3.salles_specialites", hypothese=f"Outil simulé uniquement pour : {', '.join(scope)}."))
     tps: list[TouchPoint] = []
     fixed_ws = fiche.donnees.type_poste == "fixe"
     for step in fiche.processus:
@@ -135,6 +169,7 @@ def fiche_to_software(fiche: FicheLogiciel, known_tasks: set[str] | None = None)
         tps.append(
             TouchPoint(
                 task_kind=kind,
+                specialties=scope,
                 roles=[role] if role else [],
                 max_items_per_entry=step.elements_max_par_saisie,
                 time_per_entry_min=entry,

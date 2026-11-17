@@ -140,8 +140,9 @@ class HumanLayer:
                 outcome = self.cfg.support_outage_outcome if supported else self.cfg.outage_team_outcome
                 for pool_name, agents in self.agents.items():
                     present = self.sim._open_units(pool_name, env.now) if pool_name in self.sim.pools else len(agents)
+                    o = outcome if pool_name in self.user_pools else max(outcome, self.cfg.non_user_outage_outcome)
                     for a in agents[: max(0, present)]:
-                        self.update(a, outcome)
+                        self.update(a, o)
 
     # ---------------------------------------------------------------- requêtes du moteur
     def deployed(self, t: float) -> bool:

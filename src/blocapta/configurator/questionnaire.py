@@ -14,7 +14,7 @@ from ..llm import LLMClient
 from ..settings import get_settings
 from .assistant import propose_patch
 from .loader import load_archetype_dict, resolve_dict
-from .patching import PatchOp, PatchResult, apply_patch
+from .patching import PatchOp, PatchResult, apply_patch, expand_pointer
 
 _DAYS = {"lun": 0, "mar": 1, "mer": 2, "jeu": 3, "ven": 4, "sam": 5, "dim": 6}
 
@@ -75,7 +75,7 @@ def render_markdown(q: Questionnaire) -> str:
 
 
 def answers_template(q: Questionnaire) -> str:
-    out = [f"# Réponses — {q.title}", "# Laissez null si l'information est inconnue.", "archetype: ch_general", "answers:"]
+    out = [f"# Réponses — {q.title}", "# Laissez null si l'information est inconnue.", "archetype: bloc_reference", "answers:"]
     for s in q.sections:
         out.append(f"  # --- {s.id}. {s.title}")
         for qu in s.questions:
@@ -165,7 +165,7 @@ def _is_unknown(v: Any) -> bool:
 
 def apply_answers(
     answers: dict[str, Any],
-    archetype: str = "ch_general",
+    archetype: str = "bloc_reference",
     questionnaire: Questionnaire | None = None,
     llm: LLMClient | None = None,
     hospital_id: str | None = None,
@@ -191,7 +191,10 @@ def apply_answers(
         except (ValueError, TypeError, KeyError) as e:
             res.errors.append(f"{qu.id} : réponse '{raw}' illisible ({e})")
             continue
-        for target in qu.targets:
+        targets = [t for raw_t in qu.targets for t in (expand_pointer(config, raw_t) if "[*" in raw_t else [raw_t])]
+        if qu.targets and not targets:
+            res.skipped.append(f"{qu.id} : aucune cible dans cette configuration")
+        for target in targets:
             if qu.transform == "time_window":
                 ops = [
                     PatchOp(op="add", path=f"{target}/start", value_json=json.dumps(value["start"])),
@@ -232,7 +235,7 @@ def apply_answers(
 def apply_answers_file(path: Path, llm: LLMClient | None = None) -> AnswersResult:
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     return apply_answers(
-        data.get("answers", {}), archetype=data.get("archetype", "ch_general"), llm=llm, hospital_id=data.get("id")
+        data.get("answers", {}), archetype=data.get("archetype", "bloc_reference"), llm=llm, hospital_id=data.get("id")
     )
 
 

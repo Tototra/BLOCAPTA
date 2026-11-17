@@ -77,7 +77,7 @@ def test_cli_full_flow(tmp_path):
         cli, ["apply-answers", str(EXAMPLES / "questionnaire" / "reponses_exemple.yaml"), "-o", str(tmp_path / "h.yaml")]
     )
     assert res.exit_code == 0, res.output
-    assert yaml.safe_load((tmp_path / "h.yaml").read_text())["resources"]["salle_bloc"]["count"] == 9
+    assert yaml.safe_load((tmp_path / "h.yaml").read_text())["programme"]["start"] == "08:15"
     out = tmp_path / "rapport.md"
     res = runner.invoke(
         cli,

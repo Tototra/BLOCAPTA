@@ -28,14 +28,14 @@ def test_deep_merge_by_id_and_delete():
     assert out == {"a": {"x": 1}, "l": [{"id": "p", "v": 9}, {"id": "r"}]}
 
 
-@pytest.mark.parametrize("name", ["ch_general", "chu", "clinique_privee"])
+@pytest.mark.parametrize("name", ["ch_general", "chu", "clinique_privee", "bloc_reference"])
 def test_all_archetypes_load(name):
     h = load_hospital({"id": "t", "name": "t", "extends": name})
     assert h.pathways
 
 
 def test_archetype_listing():
-    assert {"ch_general", "chu", "clinique_privee"} <= set(list_archetypes())
+    assert {"ch_general", "chu", "clinique_privee", "bloc_reference"} <= set(list_archetypes())
 
 
 def test_example_hospital_inherits():
@@ -97,21 +97,36 @@ def test_transforms():
 def test_questionnaire_render():
     q = load_questionnaire()
     md = render_markdown(q)
-    assert "B7" in md and "actes CCAM" in md
-    assert len(q.questions()) > 40
+    assert "F1" in md and "actes CCAM" in md and "pré-anesthésie" in md
+    assert len(q.questions()) > 45
 
 
-def test_apply_answers_example():
+def test_apply_answers_example_on_reference_bloc():
     r = apply_answers_file(EXAMPLES / "questionnaire" / "reponses_exemple.yaml")
     assert not r.errors, r.errors
     h = load_hospital(r.config)
-    assert h.resources["salle_bloc"].count == 9
-    assert h.resources["salle_bloc"].shift.start == "07:45"
-    assert h.resources["chirurgien"].shift.end == "19:00"
+    vacations = [s for s in h.resources["salle_op"].shifts if s.label == "vacation"]
+    assert len(vacations) == 5 and all(s.count == 8 and s.end == "18:00" for s in vacations)
+    assert all(s.count == 1 for s in h.resources["salle_op"].shifts if s.label == "garde")
+    assert h.programme.start == "08:15" and h.programme.turnover_min == 9
+    prog = [p for p in h.pathways if not p.urgent]
+    urg = [p for p in h.pathways if p.urgent]
+    assert all(p.room_last_start == "17:30" for p in prog) and all(p.room_last_start is None for p in urg)
+    items = prog[0].steps[[s.id for s in prog[0].steps].index("intervention")].documentation[0].items
+    assert items.values[2.0] == pytest.approx(0.36)
     assert h.name.startswith("Centre hospitalier du Val")
     assert "H1" in r.context_notes
+
+
+def test_wildcard_selectors():
+    from blocapta.configurator.patching import expand_pointer
+
+    cfg = load_hospital_dict({"id": "t", "name": "t", "extends": "bloc_reference"})
+    assert len(expand_pointer(cfg, "/pathways[*]/steps[id=intervention]")) == len(cfg["pathways"])
+    assert len(expand_pointer(cfg, "/resources/salle_op/shifts[*label=garde]")) == 2
 
 
 def test_missing_required_reported():
     r = apply_answers({})
     assert any(m.startswith("B1") for m in r.missing_required)
+    assert any(m.startswith("G8") for m in r.missing_required)
